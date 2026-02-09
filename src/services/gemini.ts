@@ -5,7 +5,7 @@ import { GeminiNutritionResponse } from '../models/types';
 import Constants from 'expo-constants';
 
 const GEMINI_API_KEY = Constants.expoConfig?.extra?.geminiApiKey || '';
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-2.5-flash'; // Обновлено: квота gemini-2.0-flash исчерпана
 
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
