@@ -10,15 +10,17 @@ import GoalProgressRing from '../components/GoalProgressRing';
 import MacroSummaryBar from '../components/MacroSummaryBar';
 import MealCard from '../components/MealCard';
 import EmptyState from '../components/EmptyState';
-import { formatDateRussian } from '../utils/dateHelpers';
+import { formatDateRussian, todayKey } from '../utils/dateHelpers';
 import { colors } from '../theme/colors';
+import { EMPTY_MACROS } from '../utils/constants';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const profile = useProfileStore((s) => s.profile);
-  const todayEntry = useDiaryStore((s) => s.getTodayEntry());
+  const entries = useDiaryStore((s) => s.entries);
+  const todayEntry = entries[todayKey()] || { date: todayKey(), meals: [], totalMacros: EMPTY_MACROS };
 
   const consumed = todayEntry.totalMacros;
   const lastMeals = todayEntry.meals.slice(-3).reverse();

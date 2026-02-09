@@ -14,14 +14,16 @@ import { useChatStore } from '../stores/useChatStore';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { sendChatMessage } from '../services/gemini';
-import { GOAL_LABELS } from '../utils/constants';
+import { GOAL_LABELS, EMPTY_MACROS } from '../utils/constants';
+import { todayKey } from '../utils/dateHelpers';
 import ChatMessageComponent from '../components/ChatMessage';
 import { colors } from '../theme/colors';
 
 export default function ChatScreen() {
   const { messages, isLoading, addMessage, setLoading, clearHistory } = useChatStore();
   const profile = useProfileStore((s) => s.profile);
-  const todayEntry = useDiaryStore((s) => s.getTodayEntry());
+  const entries = useDiaryStore((s) => s.entries);
+  const todayEntry = entries[todayKey()] || { date: todayKey(), meals: [], totalMacros: EMPTY_MACROS };
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
 

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { DiaryStackParamList, MealType } from '../models/types';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../utils/constants';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
 import DaySelector from '../components/DaySelector';
 import MealCard from '../components/MealCard';
@@ -17,9 +17,12 @@ type Nav = NativeStackNavigationProp<DiaryStackParamList>;
 export default function DiaryScreen() {
   const navigation = useNavigation<Nav>();
   const [selectedDate, setSelectedDate] = useState(todayKey());
-  const getEntry = useDiaryStore((s) => s.getEntry);
+  const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
-  const entry = getEntry(selectedDate);
+  const entry = useMemo(
+    () => entries[selectedDate] || { date: selectedDate, meals: [], totalMacros: EMPTY_MACROS },
+    [entries, selectedDate]
+  );
 
   const mealGroups: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 

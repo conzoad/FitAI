@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -7,18 +7,22 @@ import { useDiaryStore } from '../stores/useDiaryStore';
 import { useProfileStore } from '../stores/useProfileStore';
 import { formatDayShort, getDaysArray, dateKey } from '../utils/dateHelpers';
 import { colors } from '../theme/colors';
+import { EMPTY_MACROS } from '../utils/constants';
 
 const screenWidth = Dimensions.get('window').width - 40;
 
 export default function StatsScreen() {
   const navigation = useNavigation();
-  const getEntry = useDiaryStore((s) => s.getEntry);
+  const diaryEntries = useDiaryStore((s) => s.entries);
   const profile = useProfileStore((s) => s.profile);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
 
-  const days = getDaysArray(period === 'week' ? 7 : 30);
+  const days = useMemo(() => getDaysArray(period === 'week' ? 7 : 30), [period]);
 
-  const entries = days.map((d) => getEntry(dateKey(d)));
+  const entries = useMemo(
+    () => days.map((d) => diaryEntries[dateKey(d)] || { date: dateKey(d), meals: [], totalMacros: EMPTY_MACROS }),
+    [days, diaryEntries]
+  );
 
   const calorieData = entries.map((e) => e.totalMacros.calories);
   const proteinData = entries.map((e) => e.totalMacros.proteins);

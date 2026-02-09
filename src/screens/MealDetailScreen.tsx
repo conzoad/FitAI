@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { DiaryStackParamList } from '../models/types';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../utils/constants';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import FoodItemCard from '../components/FoodItemCard';
 import { colors } from '../theme/colors';
 
@@ -14,9 +14,12 @@ export default function MealDetailScreen() {
   const route = useRoute<Route>();
   const navigation = useNavigation();
   const { mealId, date } = route.params;
-  const getEntry = useDiaryStore((s) => s.getEntry);
+  const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
-  const entry = getEntry(date);
+  const entry = useMemo(
+    () => entries[date] || { date, meals: [], totalMacros: EMPTY_MACROS },
+    [entries, date]
+  );
   const meal = entry.meals.find((m) => m.id === mealId);
 
   if (!meal) {
