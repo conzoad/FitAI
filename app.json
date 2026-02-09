@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "КБЖУ Трекер",
+    "slug": "kbzhu-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4CAF50"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4CAF50"
+      },
+      "permissions": ["CAMERA"],
+      "package": "com.kbzhutracker.app",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Приложению нужен доступ к камере для распознавания блюд",
+          "photosPermission": "Приложению нужен доступ к фотографиям для распознавания блюд"
+        }
+      ]
+    ]
+  }
+}

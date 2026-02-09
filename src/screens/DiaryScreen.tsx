@@ -1,0 +1,136 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useDiaryStore } from '../stores/useDiaryStore';
+import { DiaryStackParamList, MealType } from '../models/types';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../utils/constants';
+import { todayKey } from '../utils/dateHelpers';
+import DaySelector from '../components/DaySelector';
+import MealCard from '../components/MealCard';
+import EmptyState from '../components/EmptyState';
+import { colors } from '../theme/colors';
+
+type Nav = NativeStackNavigationProp<DiaryStackParamList>;
+
+export default function DiaryScreen() {
+  const navigation = useNavigation<Nav>();
+  const [selectedDate, setSelectedDate] = useState(todayKey());
+  const getEntry = useDiaryStore((s) => s.getEntry);
+  const removeMeal = useDiaryStore((s) => s.removeMeal);
+  const entry = getEntry(selectedDate);
+
+  const mealGroups: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+  const handleDelete = (mealId: string) => {
+    Alert.alert('Удалить?', 'Удалить этот приём пищи?', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => removeMeal(selectedDate, mealId),
+      },
+    ]);
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <Text style={styles.title}>Дневник питания</Text>
+      <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+
+      <View style={styles.dailyTotal}>
+        <Text style={styles.dailyCalories}>
+          {Math.round(entry.totalMacros.calories)} ккал
+        </Text>
+        <Text style={styles.dailyMacros}>
+          Б:{Math.round(entry.totalMacros.proteins)}г  Ж:{Math.round(entry.totalMacros.fats)}г  У:{Math.round(entry.totalMacros.carbs)}г
+        </Text>
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {entry.meals.length === 0 ? (
+          <EmptyState
+            icon="📝"
+            title="Нет записей"
+            subtitle="Добавьте приём пищи через вкладку +"
+          />
+        ) : (
+          mealGroups.map((type) => {
+            const meals = entry.meals.filter((m) => m.type === type);
+            if (meals.length === 0) return null;
+            return (
+              <View key={type} style={styles.section}>
+                <Text style={styles.sectionTitle}>
+                  {MEAL_TYPE_ICONS[type]} {MEAL_TYPE_LABELS[type]}
+                </Text>
+                {meals.map((meal) => (
+                  <MealCard
+                    key={meal.id}
+                    meal={meal}
+                    onPress={() =>
+                      navigation.navigate('MealDetail', {
+                        mealId: meal.id,
+                        date: selectedDate,
+                      })
+                    }
+                    onDelete={() => handleDelete(meal.id)}
+                  />
+                ))}
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  dailyTotal: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: colors.surface,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dailyCalories: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.calories,
+  },
+  dailyMacros: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+});
