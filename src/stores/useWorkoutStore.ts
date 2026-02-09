@@ -2,14 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
-import { Exercise, WorkoutExercise, WorkoutSession, WorkoutSet } from '../models/types';
+import { Exercise, WorkoutExercise, WorkoutSession, WorkoutSet, WorkoutProgram, ProgramExercise } from '../models/types';
 import { generateId } from '../utils/calculations';
 
 interface WorkoutState {
   sessions: Record<string, WorkoutSession[]>;
   activeWorkout: WorkoutSession | null;
+  programs: WorkoutProgram[];
 
   startWorkout: () => void;
+  startWorkoutFromProgram: (program: WorkoutProgram, exercises: Exercise[]) => void;
   addExercise: (exercise: Exercise) => void;
   removeExercise: (workoutExerciseId: string) => void;
   addSet: (workoutExerciseId: string, weight: number, reps: number, isWarmup?: boolean) => void;
@@ -18,6 +20,8 @@ interface WorkoutState {
   finishWorkout: (notes?: string) => void;
   cancelWorkout: () => void;
   deleteSession: (date: string, sessionId: string) => void;
+  addProgram: (name: string, exercises: ProgramExercise[]) => void;
+  deleteProgram: (programId: string) => void;
 }
 
 function calculateVolume(exercises: WorkoutExercise[]): number {
@@ -33,6 +37,7 @@ export const useWorkoutStore = create<WorkoutState>()(
     (set, get) => ({
       sessions: {},
       activeWorkout: null,
+      programs: [],
 
       startWorkout: () => {
         const now = Date.now();
@@ -177,6 +182,56 @@ export const useWorkoutStore = create<WorkoutState>()(
           };
         });
       },
+
+      startWorkoutFromProgram: (program, exercises) => {
+        const now = Date.now();
+        const exerciseMap = new Map(exercises.map((e) => [e.id, e]));
+        const workoutExercises: WorkoutExercise[] = [];
+
+        for (const pe of program.exercises) {
+          const ex = exerciseMap.get(pe.exerciseId);
+          if (ex) {
+            workoutExercises.push({
+              id: generateId(),
+              exerciseId: ex.id,
+              exerciseName: ex.name,
+              sets: [] as WorkoutSet[],
+              notes: `${pe.targetSets}\u00d7${pe.targetReps}`,
+            });
+          }
+        }
+
+        set({
+          activeWorkout: {
+            id: generateId(),
+            date: format(new Date(), 'yyyy-MM-dd'),
+            startTime: now,
+            exercises: workoutExercises,
+            totalVolume: 0,
+            duration: 0,
+          },
+        });
+      },
+
+      addProgram: (name, exercises) => {
+        set((state) => ({
+          programs: [
+            ...state.programs,
+            {
+              id: generateId(),
+              name,
+              exercises,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }));
+      },
+
+      deleteProgram: (programId) => {
+        set((state) => ({
+          programs: state.programs.filter((p) => p.id !== programId),
+        }));
+      },
     }),
     {
       name: 'workout-storage',
@@ -184,6 +239,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       partialize: (state) => ({
         sessions: state.sessions,
         activeWorkout: state.activeWorkout,
+        programs: state.programs,
       }),
     }
   )

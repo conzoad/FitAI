@@ -34,6 +34,11 @@ export type Gender = 'male' | 'female';
 export type Goal = 'loss' | 'maintenance' | 'gain';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 
+export interface WeightEntry {
+  date: string;
+  weight: number;
+}
+
 export interface UserProfile {
   name: string;
   age: number;
@@ -47,6 +52,7 @@ export interface UserProfile {
   targetFats: number;
   targetCarbs: number;
   isOnboarded: boolean;
+  weightHistory: WeightEntry[];
 }
 
 export interface ChatMessage {
@@ -112,6 +118,7 @@ export interface Exercise {
   equipment: string;
   description: string;
   isCompound: boolean;
+  gifUrl?: string;
 }
 
 export interface WorkoutSet {
@@ -149,14 +156,31 @@ export interface BarcodeProduct {
   imageUrl?: string;
 }
 
+// ===== Workout Programs =====
+
+export interface ProgramExercise {
+  exerciseId: string;
+  targetSets: number;
+  targetReps: string;
+}
+
+export interface WorkoutProgram {
+  id: string;
+  name: string;
+  exercises: ProgramExercise[];
+  createdAt: string;
+}
+
 // ===== Navigation =====
 
 export type WorkoutStackParamList = {
   Workouts: undefined;
-  StartWorkout: undefined;
+  StartWorkout: { programId?: string } | undefined;
   ExerciseList: { onSelect?: boolean };
   ExerciseDetail: { exerciseId: string };
   WorkoutDetail: { sessionId: string; date: string };
+  CreateProgram: undefined;
+  ProgramDetail: { programId: string };
 };
 
 export type AddMealStackParamList = {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,19 +7,30 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import { useProfileStore } from '../stores/useProfileStore';
+import { useAuthStore } from '../stores/useAuthStore';
 import { Goal, ActivityLevel, Gender } from '../models/types';
 import { GOAL_LABELS, ACTIVITY_LABELS, GENDER_LABELS } from '../utils/constants';
 import { colors } from '../theme/colors';
+import { backupToGoogleDrive, restoreFromGoogleDrive, getBackupInfo } from '../services/googleDrive';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const googleClientId = Constants.expoConfig?.extra?.googleClientId || '';
 
 interface Props {
   isOnboarding?: boolean;
 }
 
 export default function ProfileScreen({ isOnboarding = false }: Props) {
-  const { profile, setProfile, calculateTargets } = useProfileStore();
+  const { profile, setProfile, calculateTargets, resetProfile } = useProfileStore();
+  const { user, logout } = useAuthStore();
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(String(profile.age));
   const [height, setHeight] = useState(String(profile.heightCm));
@@ -27,6 +38,92 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const [gender, setGender] = useState<Gender>(profile.gender);
   const [goal, setGoal] = useState<Goal>(profile.goal);
   const [activity, setActivity] = useState<ActivityLevel>(profile.activityLevel);
+  const [syncing, setSyncing] = useState(false);
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+
+  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+
+  const [driveRequest, , promptDriveAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: googleClientId,
+      scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+      redirectUri: AuthSession.makeRedirectUri(),
+    },
+    discovery
+  );
+
+  const getDriveToken = useCallback(async (): Promise<string | null> => {
+    if (!googleClientId || googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      Alert.alert('Настройка', 'Для синхронизации необходимо настроить GOOGLE_CLIENT_ID в .env');
+      return null;
+    }
+    const result = await promptDriveAsync();
+    if (result.type === 'success' && result.authentication) {
+      return result.authentication.accessToken;
+    }
+    return null;
+  }, [promptDriveAsync, googleClientId]);
+
+  const handleBackup = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const token = await getDriveToken();
+      if (!token) { setSyncing(false); return; }
+      await backupToGoogleDrive(token);
+      setLastBackup(new Date().toLocaleString('ru-RU'));
+      Alert.alert('Готово', 'Данные сохранены в Google Drive');
+    } catch (e: any) {
+      Alert.alert('Ошибка', e.message || 'Не удалось создать резервную копию');
+    } finally {
+      setSyncing(false);
+    }
+  }, [getDriveToken]);
+
+  const handleRestore = useCallback(async () => {
+    Alert.alert(
+      'Восстановление',
+      'Текущие данные будут заменены данными из резервной копии. Продолжить?',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Восстановить',
+          onPress: async () => {
+            setSyncing(true);
+            try {
+              const token = await getDriveToken();
+              if (!token) { setSyncing(false); return; }
+              await restoreFromGoogleDrive(token);
+              Alert.alert('Готово', 'Данные восстановлены. Перезапустите приложение для применения.');
+            } catch (e: any) {
+              Alert.alert('Ошибка', e.message || 'Не удалось восстановить данные');
+            } finally {
+              setSyncing(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [getDriveToken]);
+
+  const handleCheckBackup = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const token = await getDriveToken();
+      if (!token) { setSyncing(false); return; }
+      const info = await getBackupInfo(token);
+      if (info.exists && info.modifiedTime) {
+        const date = new Date(info.modifiedTime).toLocaleString('ru-RU');
+        setLastBackup(date);
+        Alert.alert('Резервная копия', `Последнее обновление: ${date}`);
+      } else {
+        Alert.alert('Резервная копия', 'Резервная копия не найдена');
+      }
+    } catch (e: any) {
+      Alert.alert('Ошибка', e.message || 'Не удалось проверить');
+    } finally {
+      setSyncing(false);
+    }
+  }, [getDriveToken]);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -49,6 +146,20 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const goals: Goal[] = ['loss', 'maintenance', 'gain'];
   const activities: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
   const genders: Gender[] = ['male', 'female'];
+
+  const handleLogout = () => {
+    Alert.alert('Выйти из аккаунта?', 'Данные профиля будут сброшены', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Выйти',
+        style: 'destructive',
+        onPress: () => {
+          resetProfile();
+          logout();
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -159,6 +270,55 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
             <Text style={styles.targetItem}>Белки: {profile.targetProteins} г</Text>
             <Text style={styles.targetItem}>Жиры: {profile.targetFats} г</Text>
             <Text style={styles.targetItem}>Углеводы: {profile.targetCarbs} г</Text>
+          </View>
+        )}
+
+        {!isOnboarding && user && (
+          <View style={styles.accountSection}>
+            <Text style={styles.accountTitle}>Аккаунт</Text>
+            <View style={styles.accountCard}>
+              <Text style={styles.accountEmail}>{user.email}</Text>
+              <Text style={styles.accountProvider}>
+                {user.provider === 'google' ? 'Google' : 'Email'}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Выйти из аккаунта</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isOnboarding && (
+          <View style={styles.syncSection}>
+            <Text style={styles.syncTitle}>Google Drive</Text>
+            <Text style={styles.syncDescription}>
+              Сохраняйте и восстанавливайте данные через Google Drive
+            </Text>
+            {lastBackup && (
+              <Text style={styles.syncLastBackup}>
+                Последняя копия: {lastBackup}
+              </Text>
+            )}
+            {syncing ? (
+              <View style={styles.syncLoading}>
+                <ActivityIndicator color={colors.primary} size="small" />
+                <Text style={styles.syncLoadingText}>Синхронизация...</Text>
+              </View>
+            ) : (
+              <View style={styles.syncButtons}>
+                <TouchableOpacity style={styles.syncButton} onPress={handleBackup}>
+                  <Text style={styles.syncButtonIcon}>↑</Text>
+                  <Text style={styles.syncButtonText}>Сохранить</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.syncButton} onPress={handleRestore}>
+                  <Text style={styles.syncButtonIcon}>↓</Text>
+                  <Text style={styles.syncButtonText}>Восстановить</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.syncButtonSmall} onPress={handleCheckBackup}>
+                  <Text style={styles.syncButtonSmallText}>Проверить</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -285,5 +445,114 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 4,
+  },
+  accountSection: {
+    marginTop: 24,
+  },
+  accountTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  accountCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  accountEmail: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  accountProvider: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  logoutButton: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#DC2626',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  syncSection: {
+    marginTop: 24,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  syncTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  syncDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  syncLastBackup: {
+    fontSize: 12,
+    color: colors.primary,
+    marginBottom: 10,
+  },
+  syncLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    gap: 8,
+  },
+  syncLoadingText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  syncButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  syncButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  syncButtonIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  syncButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primaryDark,
+  },
+  syncButtonSmall: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+  },
+  syncButtonSmallText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 });

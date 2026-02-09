@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
@@ -16,6 +16,8 @@ export default function ExerciseDetailScreen() {
   const navigation = useNavigation();
   const { exerciseId } = route.params;
   const sessions = useWorkoutStore((s) => s.sessions);
+  const [gifLoading, setGifLoading] = useState(true);
+  const [gifError, setGifError] = useState(false);
 
   const exercise = useMemo(() => getExerciseById(exerciseId), [exerciseId]);
 
@@ -81,6 +83,23 @@ export default function ExerciseDetailScreen() {
             </View>
           )}
         </View>
+
+        {exercise.gifUrl && !gifError && (
+          <View style={styles.gifContainer}>
+            {gifLoading && (
+              <View style={styles.gifLoading}>
+                <ActivityIndicator size="large" color={colors.workout} />
+              </View>
+            )}
+            <Image
+              source={{ uri: exercise.gifUrl }}
+              style={styles.gifImage}
+              resizeMode="contain"
+              onLoad={() => setGifLoading(false)}
+              onError={() => { setGifLoading(false); setGifError(true); }}
+            />
+          </View>
+        )}
 
         <Text style={styles.description}>{exercise.description}</Text>
 
@@ -181,6 +200,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  gifContainer: {
+    width: '100%',
+    height: 250,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginBottom: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  gifLoading: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  gifImage: {
+    width: '100%',
+    height: '100%',
   },
   description: {
     fontSize: 15,

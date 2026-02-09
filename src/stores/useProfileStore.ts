@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, ActivityLevel, Goal } from '../models/types';
+import { UserProfile, ActivityLevel, Goal, WeightEntry } from '../models/types';
 
 const generateId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -33,6 +33,7 @@ const DEFAULT_PROFILE: UserProfile = {
   targetFats: 56,
   targetCarbs: 225,
   isOnboarded: false,
+  weightHistory: [],
 };
 
 interface ProfileState {
@@ -40,6 +41,8 @@ interface ProfileState {
   setProfile: (partial: Partial<UserProfile>) => void;
   calculateTargets: () => void;
   resetProfile: () => void;
+  addWeightEntry: (weight: number) => void;
+  removeWeightEntry: (date: string) => void;
 }
 
 export const useProfileStore = create<ProfileState>()(
@@ -88,6 +91,31 @@ export const useProfileStore = create<ProfileState>()(
 
       resetProfile: () =>
         set({ profile: { ...DEFAULT_PROFILE } }),
+
+      addWeightEntry: (weight: number) =>
+        set((state) => {
+          const today = new Date().toISOString().split('T')[0];
+          const history = state.profile.weightHistory || [];
+          const filtered = history.filter((e) => e.date !== today);
+          const updated = [...filtered, { date: today, weight }].sort(
+            (a, b) => a.date.localeCompare(b.date)
+          );
+          return {
+            profile: {
+              ...state.profile,
+              weightKg: weight,
+              weightHistory: updated,
+            },
+          };
+        }),
+
+      removeWeightEntry: (date: string) =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            weightHistory: (state.profile.weightHistory || []).filter((e) => e.date !== date),
+          },
+        })),
     }),
     {
       name: 'profile-storage',

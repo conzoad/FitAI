@@ -9,6 +9,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Базовое упражнение для грудных мышц. Лёжа на скамье, опустите штангу к груди и выжмите вверх.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif',
   },
   {
     id: 'dumbbell-press',
@@ -17,6 +18,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантели',
     description: 'Жим гантелей на горизонтальной скамье. Позволяет увеличить амплитуду движения.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Press.gif',
   },
   {
     id: 'dumbbell-fly',
@@ -25,6 +27,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантели',
     description: 'Изолирующее упражнение. Разведите руки в стороны, слегка сгибая локти.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Fly.gif',
   },
   {
     id: 'push-ups',
@@ -33,6 +36,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Собственный вес',
     description: 'Классическое упражнение. Опуститесь до касания грудью пола и отожмитесь.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Push-Up.gif',
   },
 
   // === Спина ===
@@ -43,6 +47,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Турник',
     description: 'Базовое упражнение для широчайших мышц. Подтянитесь до подбородка выше перекладины.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pull-Up.gif',
   },
   {
     id: 'barbell-row',
@@ -51,6 +56,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Наклонитесь вперёд и тяните штангу к поясу. Держите спину прямой.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bent-Over-Row.gif',
   },
   {
     id: 'lat-pulldown',
@@ -59,6 +65,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Тренажёр',
     description: 'Тяните рукоять блока к груди, сводя лопатки.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Lat-Pulldown.gif',
   },
   {
     id: 'dumbbell-row',
@@ -67,6 +74,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантель',
     description: 'Одной рукой тяните гантель к поясу, опираясь другой рукой на скамью.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Row.gif',
   },
 
   // === Плечи ===
@@ -77,6 +85,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Выжмите штангу над головой из положения на уровне плеч.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Overhead-Press.gif',
   },
   {
     id: 'lateral-raise',
@@ -85,6 +94,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантели',
     description: 'Поднимите гантели в стороны до уровня плеч. Изолирует средний пучок дельт.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif',
   },
   {
     id: 'upright-row',
@@ -93,6 +103,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Тяните штангу вдоль тела вверх, разводя локти в стороны.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Upright-Row.gif',
   },
 
   // === Бицепс ===
@@ -103,6 +114,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Стоя, согните руки со штангой. Локти прижаты к корпусу.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Curl.gif',
   },
   {
     id: 'hammer-curl',
@@ -111,6 +123,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантели',
     description: 'Сгибания рук с нейтральным хватом. Развивает плечелучевую мышцу.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Hammer-Curl.gif',
   },
   {
     id: 'concentration-curl',
@@ -119,6 +132,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантель',
     description: 'Сидя, уприте локоть во внутреннюю часть бедра и согните руку.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Concentration-Curl.gif',
   },
 
   // === Трицепс ===
@@ -129,6 +143,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Лёжа на скамье, опустите штангу ко лбу, сгибая только локти.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Skull-Crusher.gif',
   },
   {
     id: 'tricep-pushdown',
@@ -137,6 +152,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Тренажёр',
     description: 'Разгибайте руки на верхнем блоке, прижимая локти к корпусу.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pushdown.gif',
   },
   {
     id: 'dips',
@@ -145,6 +161,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Брусья',
     description: 'Опуститесь между брусьями и отожмитесь. Наклон вперёд — акцент на грудь, вертикально — на трицепс.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Chest-Dip.gif',
   },
 
   // === Ноги ===
@@ -155,6 +172,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Базовое упражнение. Присядьте до параллели бёдер с полом.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Squat.gif',
   },
   {
     id: 'leg-press',
@@ -163,6 +181,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Тренажёр',
     description: 'Выжимайте платформу ногами. Безопасная альтернатива приседаниям.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Leg-Press.gif',
   },
   {
     id: 'lunges',
@@ -171,6 +190,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Гантели',
     description: 'Шагните вперёд и опуститесь до прямого угла в коленях.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lunges.gif',
   },
   {
     id: 'leg-extension',
@@ -179,6 +199,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Тренажёр',
     description: 'Изолированная работа квадрицепса. Разгибайте ноги в тренажёре.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/LEG-EXTENSION.gif',
   },
 
   // === Ягодицы ===
@@ -189,6 +210,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Упритесь спиной в скамью и поднимите таз со штангой на бёдрах.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Hip-Thrust.gif',
   },
   {
     id: 'romanian-deadlift',
@@ -197,6 +219,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Наклонитесь вперёд с почти прямыми ногами, растягивая заднюю поверхность бедра.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Romanian-Deadlift.gif',
   },
 
   // === Пресс ===
@@ -207,6 +230,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Собственный вес',
     description: 'Лёжа на спине, поднимите плечи от пола, сокращая мышцы пресса.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Crunch.gif',
   },
   {
     id: 'plank',
@@ -215,6 +239,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Собственный вес',
     description: 'Статическое упражнение. Удерживайте тело в прямой линии на предплечьях.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Front-Plank.gif',
   },
   {
     id: 'leg-raise',
@@ -223,6 +248,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Собственный вес',
     description: 'Лёжа на спине или в висе, поднимите прямые ноги вверх.',
     isCompound: false,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Lying-Leg-Raise.gif',
   },
 
   // === Кардио ===
@@ -233,6 +259,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Беговая дорожка',
     description: 'Кардио-тренировка. Укажите дистанцию или время в заметках.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Run.gif',
   },
   {
     id: 'cycling',
@@ -241,6 +268,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Велотренажёр',
     description: 'Кардио на велотренажёре. Укажите время и сопротивление в заметках.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Stationary-Bike.gif',
   },
 
   // === Всё тело ===
@@ -251,6 +279,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Собственный вес',
     description: 'Присядьте, прыгните в упор лёжа, отожмитесь, вернитесь и подпрыгните.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Burpee.gif',
   },
   {
     id: 'deadlift',
@@ -259,6 +288,7 @@ export const EXERCISES: Exercise[] = [
     equipment: 'Штанга',
     description: 'Базовое упражнение. Поднимите штангу с пола, разгибая ноги и спину.',
     isCompound: true,
+    gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Deadlift.gif',
   },
 ];
 
