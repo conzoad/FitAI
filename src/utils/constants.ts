@@ -34,3 +34,31 @@ export const GENDER_LABELS: Record<Gender, string> = {
 };
 
 export const EMPTY_MACROS = { calories: 0, proteins: 0, fats: 0, carbs: 0 };
+
+// ===== Workout Constants =====
+
+export const MUSCLE_GROUP_LABELS: Record<string, string> = {
+  chest: 'Грудь',
+  back: 'Спина',
+  shoulders: 'Плечи',
+  biceps: 'Бицепс',
+  triceps: 'Трицепс',
+  legs: 'Ноги',
+  glutes: 'Ягодицы',
+  abs: 'Пресс',
+  cardio: 'Кардио',
+  fullBody: 'Всё тело',
+};
+
+export const MUSCLE_GROUP_ICONS: Record<string, string> = {
+  chest: '🏋️',
+  back: '🔙',
+  shoulders: '💪',
+  biceps: '💪',
+  triceps: '💪',
+  legs: '🦵',
+  glutes: '🍑',
+  abs: '🎯',
+  cardio: '🏃',
+  fullBody: '⚡',
+};

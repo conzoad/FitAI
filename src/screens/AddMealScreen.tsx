@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,12 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeTextMeal, analyzePhotoMeal } from '../services/gemini';
 import { useDiaryStore } from '../stores/useDiaryStore';
-import { MealType, FoodItem, GeminiNutritionResponse } from '../models/types';
+import { MealType, FoodItem, GeminiNutritionResponse, AddMealStackParamList, BarcodeProduct } from '../models/types';
 import { MEAL_TYPE_LABELS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
 import { generateId } from '../utils/calculations';
@@ -24,9 +26,12 @@ import LoadingOverlay from '../components/LoadingOverlay';
 import { colors } from '../theme/colors';
 
 type InputMode = 'text' | 'photo';
+type Nav = NativeStackNavigationProp<AddMealStackParamList, 'AddMeal'>;
 
 export default function AddMealScreen() {
   const addMeal = useDiaryStore((s) => s.addMeal);
+  const navigation = useNavigation<Nav>();
+  const route = useRoute<RouteProp<AddMealStackParamList, 'AddMeal'>>();
 
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [mode, setMode] = useState<InputMode>('text');
@@ -38,6 +43,29 @@ export default function AddMealScreen() {
   const [saved, setSaved] = useState(false);
 
   const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+  // Handle barcode product from scanner
+  useEffect(() => {
+    const barcodeProduct = (route.params as any)?.barcodeProduct as BarcodeProduct | undefined;
+    if (barcodeProduct) {
+      setResult({
+        items: [{
+          name: barcodeProduct.brand ? `${barcodeProduct.name} (${barcodeProduct.brand})` : barcodeProduct.name,
+          amount: barcodeProduct.servingSize,
+          calories: barcodeProduct.macros.calories,
+          proteins: barcodeProduct.macros.proteins,
+          fats: barcodeProduct.macros.fats,
+          carbs: barcodeProduct.macros.carbs,
+        }],
+        totalCalories: barcodeProduct.macros.calories,
+        totalProteins: barcodeProduct.macros.proteins,
+        totalFats: barcodeProduct.macros.fats,
+        totalCarbs: barcodeProduct.macros.carbs,
+        confidence: 'high',
+      });
+      setSaved(false);
+    }
+  }, [(route.params as any)?.barcodeProduct]);
 
   const handleAnalyzeText = async () => {
     if (!textInput.trim()) {
@@ -188,6 +216,14 @@ export default function AddMealScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={styles.barcodeButton}
+            onPress={() => navigation.navigate('BarcodeScanner')}
+          >
+            <Text style={styles.barcodeIcon}>📷</Text>
+            <Text style={styles.barcodeText}>Сканировать штрихкод</Text>
+          </TouchableOpacity>
 
           {mode === 'text' ? (
             <View>
@@ -467,5 +503,25 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 17,
     fontWeight: '700',
+  },
+  barcodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
+  barcodeIcon: {
+    fontSize: 18,
+  },
+  barcodeText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
   },
 });

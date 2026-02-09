@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
+import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { HomeStackParamList } from '../models/types';
 import GoalProgressRing from '../components/GoalProgressRing';
 import MacroSummaryBar from '../components/MacroSummaryBar';
@@ -21,9 +22,26 @@ export default function HomeScreen() {
   const profile = useProfileStore((s) => s.profile);
   const entries = useDiaryStore((s) => s.entries);
   const todayEntry = entries[todayKey()] || { date: todayKey(), meals: [], totalMacros: EMPTY_MACROS };
+  const workoutSessions = useWorkoutStore((s) => s.sessions);
 
   const consumed = todayEntry.totalMacros;
   const lastMeals = todayEntry.meals.slice(-3).reverse();
+
+  const todayWorkouts = useMemo(() => {
+    const today = todayKey();
+    return workoutSessions[today] || [];
+  }, [workoutSessions]);
+
+  const lastWorkout = useMemo(() => {
+    const allDates = Object.keys(workoutSessions).sort().reverse();
+    for (const date of allDates) {
+      const daySessions = workoutSessions[date];
+      if (daySessions && daySessions.length > 0) {
+        return daySessions[daySessions.length - 1];
+      }
+    }
+    return null;
+  }, [workoutSessions]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -66,6 +84,51 @@ export default function HomeScreen() {
             title="Пока пусто"
             subtitle="Добавьте первый приём пищи, нажав +"
           />
+        )}
+
+        {/* Workout Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Тренировки</Text>
+        </View>
+
+        {todayWorkouts.length > 0 ? (
+          todayWorkouts.map((session) => (
+            <View key={session.id} style={styles.workoutCard}>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.workoutIcon}>🏋️</Text>
+                <View style={styles.workoutInfo}>
+                  <Text style={styles.workoutTitle}>Тренировка сегодня</Text>
+                  <Text style={styles.workoutMeta}>
+                    {session.exercises.length} упр. · {session.duration} мин ·{' '}
+                    {session.totalVolume >= 1000
+                      ? `${(session.totalVolume / 1000).toFixed(1)}т`
+                      : `${session.totalVolume}кг`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))
+        ) : lastWorkout ? (
+          <View style={styles.workoutCard}>
+            <View style={styles.workoutHeader}>
+              <Text style={styles.workoutIcon}>🏋️</Text>
+              <View style={styles.workoutInfo}>
+                <Text style={styles.workoutTitle}>Последняя тренировка</Text>
+                <Text style={styles.workoutMeta}>
+                  {lastWorkout.exercises.length} упр. · {lastWorkout.duration} мин ·{' '}
+                  {lastWorkout.totalVolume >= 1000
+                    ? `${(lastWorkout.totalVolume / 1000).toFixed(1)}т`
+                    : `${lastWorkout.totalVolume}кг`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.workoutCard}>
+            <Text style={styles.noWorkoutText}>
+              Нет тренировок. Перейдите на вкладку "Трениров." чтобы начать!
+            </Text>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -115,5 +178,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
+  },
+  workoutCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  workoutIcon: {
+    fontSize: 24,
+  },
+  workoutInfo: {
+    flex: 1,
+  },
+  workoutTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  workoutMeta: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  noWorkoutText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

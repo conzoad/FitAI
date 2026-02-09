@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,19 +13,59 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChatStore } from '../stores/useChatStore';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
+import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { sendChatMessage } from '../services/gemini';
 import { GOAL_LABELS, EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
 import ChatMessageComponent from '../components/ChatMessage';
 import { colors } from '../theme/colors';
+import { format, subDays } from 'date-fns';
 
 export default function ChatScreen() {
   const { messages, isLoading, addMessage, setLoading, clearHistory } = useChatStore();
   const profile = useProfileStore((s) => s.profile);
   const entries = useDiaryStore((s) => s.entries);
   const todayEntry = entries[todayKey()] || { date: todayKey(), meals: [], totalMacros: EMPTY_MACROS };
+  const workoutSessions = useWorkoutStore((s) => s.sessions);
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
+
+  const workoutContext = useMemo(() => {
+    const lines: string[] = [];
+    let weekVolume = 0;
+    let weekWorkouts = 0;
+
+    for (let i = 0; i < 7; i++) {
+      const key = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const daySessions = workoutSessions[key] || [];
+      weekWorkouts += daySessions.length;
+      weekVolume += daySessions.reduce((sum, s) => sum + s.totalVolume, 0);
+    }
+
+    lines.push(`- Тренировок за неделю: ${weekWorkouts}`);
+    lines.push(`- Тоннаж за неделю: ${weekVolume >= 1000 ? `${(weekVolume / 1000).toFixed(1)} т` : `${weekVolume} кг`}`);
+
+    // Recent 5 workouts
+    const allDates = Object.keys(workoutSessions).sort().reverse();
+    const recentWorkouts: string[] = [];
+    for (const date of allDates) {
+      for (const session of workoutSessions[date]) {
+        if (recentWorkouts.length >= 5) break;
+        const exercises = session.exercises.map((ex) => ex.exerciseName).join(', ');
+        recentWorkouts.push(`  ${date}: ${exercises} (${session.duration} мин, ${session.totalVolume} кг)`);
+      }
+      if (recentWorkouts.length >= 5) break;
+    }
+
+    if (recentWorkouts.length > 0) {
+      lines.push('- Последние тренировки:');
+      lines.push(...recentWorkouts);
+    } else {
+      lines.push('- Тренировок пока нет');
+    }
+
+    return lines.join('\n');
+  }, [workoutSessions]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -53,6 +93,7 @@ export default function ChatScreen() {
         TODAY_P: String(Math.round(todayEntry.totalMacros.proteins)),
         TODAY_F: String(Math.round(todayEntry.totalMacros.fats)),
         TODAY_C: String(Math.round(todayEntry.totalMacros.carbs)),
+        WORKOUT_CONTEXT: workoutContext,
       };
 
       const response = await sendChatMessage(text, chatHistory, userContext);
@@ -68,6 +109,7 @@ export default function ChatScreen() {
     'Что мне поесть?',
     'Сколько калорий осталось?',
     'Составь меню на день',
+    'Посоветуй тренировку',
   ];
 
   return (

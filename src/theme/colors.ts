@@ -17,4 +17,11 @@ export const colors = {
 
   chatUser: '#E3F2FD',
   chatAssistant: '#F5F5F5',
+
+  // Workout colors
+  workout: '#7C4DFF',
+  workoutLight: '#E8DEF8',
+  warmup: '#FFB74D',
+  volume: '#26A69A',
+  personalRecord: '#FFD700',
 };

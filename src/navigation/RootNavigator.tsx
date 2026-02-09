@@ -1,21 +1,35 @@
 import React from 'react';
-import { Text, View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootTabParamList, HomeStackParamList, DiaryStackParamList } from '../models/types';
+import {
+  RootTabParamList,
+  HomeStackParamList,
+  DiaryStackParamList,
+  WorkoutStackParamList,
+  AddMealStackParamList,
+} from '../models/types';
 import { colors } from '../theme/colors';
 
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
 import AddMealScreen from '../screens/AddMealScreen';
+import BarcodeScannerScreen from '../screens/BarcodeScannerScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import StatsScreen from '../screens/StatsScreen';
 import MealDetailScreen from '../screens/MealDetailScreen';
+import WorkoutsScreen from '../screens/WorkoutsScreen';
+import StartWorkoutScreen from '../screens/StartWorkoutScreen';
+import ExerciseListScreen from '../screens/ExerciseListScreen';
+import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
+import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
+const WorkoutStack = createNativeStackNavigator<WorkoutStackParamList>();
+const AddMealStack = createNativeStackNavigator<AddMealStackParamList>();
 
 function HomeStackNavigator() {
   return (
@@ -35,10 +49,32 @@ function DiaryStackNavigator() {
   );
 }
 
+function WorkoutStackNavigator() {
+  return (
+    <WorkoutStack.Navigator screenOptions={{ headerShown: false }}>
+      <WorkoutStack.Screen name="Workouts" component={WorkoutsScreen} />
+      <WorkoutStack.Screen name="StartWorkout" component={StartWorkoutScreen} />
+      <WorkoutStack.Screen name="ExerciseList" component={ExerciseListScreen} />
+      <WorkoutStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+      <WorkoutStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
+    </WorkoutStack.Navigator>
+  );
+}
+
+function AddMealStackNavigator() {
+  return (
+    <AddMealStack.Navigator screenOptions={{ headerShown: false }}>
+      <AddMealStack.Screen name="AddMeal" component={AddMealScreen} />
+      <AddMealStack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
+    </AddMealStack.Navigator>
+  );
+}
+
 const TAB_ICONS: Record<string, string> = {
   HomeTab: '⌂',
   DiaryTab: '☰',
   AddMealTab: '+',
+  WorkoutTab: '🏋',
   ChatTab: '✉',
   ProfileTab: '☺',
 };
@@ -80,10 +116,15 @@ export default function RootNavigator() {
       />
       <Tab.Screen
         name="AddMealTab"
-        component={AddMealScreen}
+        component={AddMealStackNavigator}
         options={{
           tabBarLabel: () => null,
         }}
+      />
+      <Tab.Screen
+        name="WorkoutTab"
+        component={WorkoutStackNavigator}
+        options={{ tabBarLabel: 'Трениров.' }}
       />
       <Tab.Screen
         name="ChatTab"

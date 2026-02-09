@@ -76,6 +76,7 @@ export type RootTabParamList = {
   HomeTab: undefined;
   DiaryTab: undefined;
   AddMealTab: undefined;
+  WorkoutTab: undefined;
   ChatTab: undefined;
   ProfileTab: undefined;
 };
@@ -88,4 +89,77 @@ export type HomeStackParamList = {
 export type DiaryStackParamList = {
   Diary: undefined;
   MealDetail: { mealId: string; date: string };
+};
+
+// ===== Workout Types =====
+
+export type MuscleGroup =
+  | 'chest'
+  | 'back'
+  | 'shoulders'
+  | 'biceps'
+  | 'triceps'
+  | 'legs'
+  | 'glutes'
+  | 'abs'
+  | 'cardio'
+  | 'fullBody';
+
+export interface Exercise {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+  equipment: string;
+  description: string;
+  isCompound: boolean;
+}
+
+export interface WorkoutSet {
+  id: string;
+  weight: number;
+  reps: number;
+  isWarmup: boolean;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  sets: WorkoutSet[];
+  notes?: string;
+}
+
+export interface WorkoutSession {
+  id: string;
+  date: string;
+  startTime: number;
+  endTime?: number;
+  exercises: WorkoutExercise[];
+  notes?: string;
+  totalVolume: number;
+  duration: number;
+}
+
+export interface BarcodeProduct {
+  barcode: string;
+  name: string;
+  brand?: string;
+  servingSize: string;
+  macros: Macros;
+  imageUrl?: string;
+}
+
+// ===== Navigation =====
+
+export type WorkoutStackParamList = {
+  Workouts: undefined;
+  StartWorkout: undefined;
+  ExerciseList: { onSelect?: boolean };
+  ExerciseDetail: { exerciseId: string };
+  WorkoutDetail: { sessionId: string; date: string };
+};
+
+export type AddMealStackParamList = {
+  AddMeal: undefined;
+  BarcodeScanner: undefined;
 };
