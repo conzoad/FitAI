@@ -3,6 +3,7 @@
     "name": "КБЖУ Трекер",
     "slug": "kbzhu-tracker",
     "version": "1.0.0",
+    "projectId": "42a98aa9-d950-4993-8527-51078ee7f874",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
