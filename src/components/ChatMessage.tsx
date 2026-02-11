@@ -7,13 +7,48 @@ interface Props {
   message: ChatMessageType;
 }
 
+function renderFormattedText(text: string, isUser: boolean) {
+  const parts: React.ReactNode[] = [];
+  const regex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <Text key={`t-${lastIndex}`} style={[styles.text, isUser && styles.userText]}>
+          {text.slice(lastIndex, match.index)}
+        </Text>
+      );
+    }
+    parts.push(
+      <Text key={`b-${match.index}`} style={[styles.text, styles.bold, isUser && styles.userText]}>
+        {match[1]}
+      </Text>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(
+      <Text key={`t-${lastIndex}`} style={[styles.text, isUser && styles.userText]}>
+        {text.slice(lastIndex)}
+      </Text>
+    );
+  }
+
+  return parts;
+}
+
 export default function ChatMessage({ message }: Props) {
   const isUser = message.role === 'user';
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-        <Text style={[styles.text, isUser && styles.userText]}>{message.content}</Text>
+        <Text style={styles.textWrap}>
+          {renderFormattedText(message.content, isUser)}
+        </Text>
       </View>
     </View>
   );
@@ -47,6 +82,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
     lineHeight: 21,
+  },
+  textWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  bold: {
+    fontWeight: '700',
   },
   userText: {
     color: colors.text,
