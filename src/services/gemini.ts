@@ -7,7 +7,16 @@ import Constants from 'expo-constants';
 const GEMINI_API_KEY = Constants.expoConfig?.extra?.geminiApiKey || '';
 const MODEL_NAME = 'gemini-2.5-flash'; // Обновлено: квота gemini-2.0-flash исчерпана
 
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+let _ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!_ai) {
+    if (!GEMINI_API_KEY) {
+      throw new Error('Gemini API ключ не настроен.\n\nУкажите GEMINI_API_KEY в файле .env');
+    }
+    _ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  }
+  return _ai;
+}
 
 function handleGeminiError(error: any): never {
   // Проверяем на ошибку quota exceeded (429)
@@ -38,7 +47,7 @@ export async function analyzeTextMeal(description: string): Promise<GeminiNutrit
   try {
     const prompt = FOOD_ANALYSIS_TEXT_PROMPT.replace('{USER_INPUT}', description);
 
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: MODEL_NAME,
       contents: prompt,
       config: {
@@ -55,7 +64,7 @@ export async function analyzeTextMeal(description: string): Promise<GeminiNutrit
 
 export async function analyzePhotoMeal(base64Image: string, mimeType: string = 'image/jpeg'): Promise<GeminiNutritionResponse> {
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: MODEL_NAME,
       contents: [
         {
@@ -101,7 +110,7 @@ export async function sendChatMessage(
       { role: 'user' as const, parts: [{ text: userMessage }] },
     ];
 
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: MODEL_NAME,
       contents,
       config: {

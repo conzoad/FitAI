@@ -2,6 +2,7 @@
   "expo": {
     "name": "КБЖУ Трекер",
     "slug": "kbzhu-tracker",
+    "scheme": "kbzhu-tracker",
     "version": "1.0.0",
     "projectId": "42a98aa9-d950-4993-8527-51078ee7f874",
     "orientation": "portrait",
@@ -18,7 +19,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4CAF50"
       },
-      "permissions": ["CAMERA"],
+      "permissions": [
+        "CAMERA"
+      ],
       "package": "com.kbzhutracker.app",
       "edgeToEdgeEnabled": true
     },
@@ -29,7 +32,19 @@
           "cameraPermission": "Приложению нужен доступ к камере для распознавания блюд",
           "photosPermission": "Приложению нужен доступ к фотографиям для распознавания блюд"
         }
-      ]
-    ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Приложению нужен доступ к камере для сканирования штрихкодов"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "42a98aa9-d950-4993-8527-51078ee7f874"
+      }
+    }
   }
 }

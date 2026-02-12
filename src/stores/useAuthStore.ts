@@ -1,105 +1,151 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithCredential,
+  onAuthStateChanged,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 interface AuthUser {
   email: string;
   name: string;
   provider: 'email' | 'google';
-}
-
-interface StoredCredential {
-  email: string;
-  passwordHash: string;
-  name: string;
+  uid: string;
 }
 
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  storedCredentials: StoredCredential[];
+  isLoading: boolean;
   register: (email: string, password: string, name: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (email: string, name: string) => void;
-  logout: () => void;
+  loginWithGoogle: (idToken: string, accessToken: string | null) => Promise<void>;
+  logout: () => Promise<void>;
+  _initAuthListener: () => () => void;
 }
 
-async function hashPassword(password: string): Promise<string> {
-  return await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    password
+function mapFirebaseUser(fbUser: FirebaseUser): AuthUser {
+  const isGoogle = fbUser.providerData.some(
+    (p) => p.providerId === 'google.com'
   );
+  return {
+    email: fbUser.email || '',
+    name: fbUser.displayName || fbUser.email || '',
+    provider: isGoogle ? 'google' : 'email',
+    uid: fbUser.uid,
+  };
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
+function getFirebaseErrorMessage(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'Пользователь с таким email уже существует';
+    case 'auth/user-not-found':
+      return 'Пользователь не найден';
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Неверный пароль';
+    case 'auth/weak-password':
+      return 'Пароль должен быть не менее 6 символов';
+    case 'auth/invalid-email':
+      return 'Некорректный email';
+    case 'auth/too-many-requests':
+      return 'Слишком много попыток. Попробуйте позже';
+    case 'auth/network-request-failed':
+      return 'Ошибка сети. Проверьте подключение к интернету';
+    default:
+      return error?.message || 'Что-то пошло не так';
+  }
+}
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+
+  register: async (email: string, password: string, name: string) => {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password
+      );
+      await updateProfile(userCredential.user, { displayName: name });
+      set({
+        user: {
+          email: normalizedEmail,
+          name,
+          provider: 'email',
+          uid: userCredential.user.uid,
+        },
+        isAuthenticated: true,
+      });
+    } catch (error: any) {
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  },
+
+  login: async (email: string, password: string) => {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password
+      );
+      set({
+        user: mapFirebaseUser(userCredential.user),
+        isAuthenticated: true,
+      });
+    } catch (error: any) {
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  },
+
+  loginWithGoogle: async (idToken: string, accessToken: string | null) => {
+    try {
+      const credential = GoogleAuthProvider.credential(idToken, accessToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      set({
+        user: mapFirebaseUser(userCredential.user),
+        isAuthenticated: true,
+      });
+    } catch (error: any) {
+      throw new Error(getFirebaseErrorMessage(error));
+    }
+  },
+
+  logout: async () => {
+    await signOut(auth);
+    set({
       user: null,
       isAuthenticated: false,
-      storedCredentials: [],
+    });
+  },
 
-      register: async (email: string, password: string, name: string) => {
-        const { storedCredentials } = get();
-        const normalizedEmail = email.toLowerCase().trim();
-
-        if (storedCredentials.some((c) => c.email === normalizedEmail)) {
-          throw new Error('Пользователь с таким email уже существует');
-        }
-
-        if (password.length < 6) {
-          throw new Error('Пароль должен быть не менее 6 символов');
-        }
-
-        const passwordHash = await hashPassword(password);
-
+  _initAuthListener: () => {
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
         set({
-          user: { email: normalizedEmail, name, provider: 'email' },
+          user: mapFirebaseUser(fbUser),
           isAuthenticated: true,
-          storedCredentials: [
-            ...storedCredentials,
-            { email: normalizedEmail, passwordHash, name },
-          ],
+          isLoading: false,
         });
-      },
-
-      login: async (email: string, password: string) => {
-        const { storedCredentials } = get();
-        const normalizedEmail = email.toLowerCase().trim();
-        const credential = storedCredentials.find((c) => c.email === normalizedEmail);
-
-        if (!credential) {
-          throw new Error('Пользователь не найден');
-        }
-
-        const passwordHash = await hashPassword(password);
-        if (passwordHash !== credential.passwordHash) {
-          throw new Error('Неверный пароль');
-        }
-
-        set({
-          user: { email: normalizedEmail, name: credential.name, provider: 'email' },
-          isAuthenticated: true,
-        });
-      },
-
-      loginWithGoogle: (email: string, name: string) => {
-        set({
-          user: { email, name, provider: 'google' },
-          isAuthenticated: true,
-        });
-      },
-
-      logout: () => {
+      } else {
         set({
           user: null,
           isAuthenticated: false,
+          isLoading: false,
         });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
-);
+      }
+    });
+    return unsubscribe;
+  },
+}));

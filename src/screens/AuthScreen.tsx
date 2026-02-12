@@ -34,11 +34,16 @@ export default function AuthScreen() {
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
 
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'kbzhu-tracker',
+    path: 'redirect',
+  });
+
   const [request, , promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: googleClientId,
       scopes: ['openid', 'profile', 'email'],
-      redirectUri: AuthSession.makeRedirectUri(),
+      redirectUri,
     },
     discovery
   );
@@ -79,17 +84,13 @@ export default function AuthScreen() {
     try {
       const result = await promptAsync();
       if (result.type === 'success' && result.authentication) {
-        const userInfoResponse = await fetch(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          {
-            headers: { Authorization: `Bearer ${result.authentication.accessToken}` },
-          }
+        await loginWithGoogle(
+          result.authentication.idToken!,
+          result.authentication.accessToken
         );
-        const userInfo = await userInfoResponse.json();
-        loginWithGoogle(userInfo.email, userInfo.name || userInfo.email);
       }
     } catch (e: any) {
-      Alert.alert('Ошибка', 'Не удалось войти через Google');
+      Alert.alert('Ошибка', e.message || 'Не удалось войти через Google');
     }
   };
 
