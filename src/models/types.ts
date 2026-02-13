@@ -87,9 +87,20 @@ export type RootTabParamList = {
   ProfileTab: undefined;
 };
 
+export interface SavedFoodItem {
+  id: string;
+  name: string;
+  amount: string;
+  macros: Macros;
+  source: 'ai' | 'barcode' | 'manual';
+  addedAt: string;
+  usageCount: number;
+}
+
 export type HomeStackParamList = {
   Home: undefined;
   Stats: undefined;
+  MealDetail: { mealId: string; date: string };
 };
 
 export type DiaryStackParamList = {

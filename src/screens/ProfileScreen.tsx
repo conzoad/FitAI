@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,13 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
-import Constants from 'expo-constants';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { Goal, ActivityLevel, Gender } from '../models/types';
 import { GOAL_LABELS, ACTIVITY_LABELS, GENDER_LABELS } from '../utils/constants';
 import { colors } from '../theme/colors';
-import { backupToGoogleDrive, restoreFromGoogleDrive, getBackupInfo } from '../services/googleDrive';
-
-WebBrowser.maybeCompleteAuthSession();
-
-const googleClientId = Constants.expoConfig?.extra?.googleClientId || '';
 
 interface Props {
   isOnboarding?: boolean;
@@ -38,92 +29,6 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const [gender, setGender] = useState<Gender>(profile.gender);
   const [goal, setGoal] = useState<Goal>(profile.goal);
   const [activity, setActivity] = useState<ActivityLevel>(profile.activityLevel);
-  const [syncing, setSyncing] = useState(false);
-  const [lastBackup, setLastBackup] = useState<string | null>(null);
-
-  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
-
-  const [driveRequest, , promptDriveAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: googleClientId,
-      scopes: ['https://www.googleapis.com/auth/drive.appdata'],
-      redirectUri: AuthSession.makeRedirectUri(),
-    },
-    discovery
-  );
-
-  const getDriveToken = useCallback(async (): Promise<string | null> => {
-    if (!googleClientId || googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-      Alert.alert('Настройка', 'Для синхронизации необходимо настроить GOOGLE_CLIENT_ID в .env');
-      return null;
-    }
-    const result = await promptDriveAsync();
-    if (result.type === 'success' && result.authentication) {
-      return result.authentication.accessToken;
-    }
-    return null;
-  }, [promptDriveAsync, googleClientId]);
-
-  const handleBackup = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const token = await getDriveToken();
-      if (!token) { setSyncing(false); return; }
-      await backupToGoogleDrive(token);
-      setLastBackup(new Date().toLocaleString('ru-RU'));
-      Alert.alert('Готово', 'Данные сохранены в Google Drive');
-    } catch (e: any) {
-      Alert.alert('Ошибка', e.message || 'Не удалось создать резервную копию');
-    } finally {
-      setSyncing(false);
-    }
-  }, [getDriveToken]);
-
-  const handleRestore = useCallback(async () => {
-    Alert.alert(
-      'Восстановление',
-      'Текущие данные будут заменены данными из резервной копии. Продолжить?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Восстановить',
-          onPress: async () => {
-            setSyncing(true);
-            try {
-              const token = await getDriveToken();
-              if (!token) { setSyncing(false); return; }
-              await restoreFromGoogleDrive(token);
-              Alert.alert('Готово', 'Данные восстановлены. Перезапустите приложение для применения.');
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message || 'Не удалось восстановить данные');
-            } finally {
-              setSyncing(false);
-            }
-          },
-        },
-      ]
-    );
-  }, [getDriveToken]);
-
-  const handleCheckBackup = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const token = await getDriveToken();
-      if (!token) { setSyncing(false); return; }
-      const info = await getBackupInfo(token);
-      if (info.exists && info.modifiedTime) {
-        const date = new Date(info.modifiedTime).toLocaleString('ru-RU');
-        setLastBackup(date);
-        Alert.alert('Резервная копия', `Последнее обновление: ${date}`);
-      } else {
-        Alert.alert('Резервная копия', 'Резервная копия не найдена');
-      }
-    } catch (e: any) {
-      Alert.alert('Ошибка', e.message || 'Не удалось проверить');
-    } finally {
-      setSyncing(false);
-    }
-  }, [getDriveToken]);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -316,39 +221,6 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
           </View>
         )}
 
-        {!isOnboarding && (
-          <View style={styles.syncSection}>
-            <Text style={styles.sectionTitle}>Google Drive</Text>
-            <Text style={styles.syncDescription}>
-              Сохраняйте и восстанавливайте данные через Google Drive
-            </Text>
-            {lastBackup && (
-              <Text style={styles.syncLastBackup}>
-                Последняя копия: {lastBackup}
-              </Text>
-            )}
-            {syncing ? (
-              <View style={styles.syncLoading}>
-                <ActivityIndicator color={colors.primary} size="small" />
-                <Text style={styles.syncLoadingText}>Синхронизация...</Text>
-              </View>
-            ) : (
-              <View style={styles.syncButtons}>
-                <TouchableOpacity style={styles.syncButton} onPress={handleBackup}>
-                  <Text style={styles.syncButtonIcon}>↑</Text>
-                  <Text style={styles.syncButtonText}>Сохранить</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.syncButton} onPress={handleRestore}>
-                  <Text style={styles.syncButtonIcon}>↓</Text>
-                  <Text style={styles.syncButtonText}>Восстановить</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.syncButtonSmall} onPress={handleCheckBackup}>
-                  <Text style={styles.syncButtonSmallText}>Проверить</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -576,72 +448,5 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: 16,
     fontWeight: '600',
-  },
-  syncSection: {
-    marginTop: 24,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  syncDescription: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 12,
-    lineHeight: 19,
-  },
-  syncLastBackup: {
-    fontSize: 12,
-    color: colors.success,
-    marginBottom: 10,
-    fontWeight: '500',
-  },
-  syncLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    gap: 8,
-  },
-  syncLoadingText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  syncButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  syncButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(108, 92, 231, 0.12)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    gap: 6,
-  },
-  syncButtonIcon: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  syncButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  syncButtonSmall: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceLight,
-    justifyContent: 'center',
-  },
-  syncButtonSmallText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
   },
 });

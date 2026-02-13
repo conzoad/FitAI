@@ -38,6 +38,7 @@ function HomeStackNavigator() {
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
       <HomeStack.Screen name="Stats" component={StatsScreen} />
+      <HomeStack.Screen name="MealDetail" component={MealDetailScreen} />
     </HomeStack.Navigator>
   );
 }

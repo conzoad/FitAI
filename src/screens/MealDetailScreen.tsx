@@ -1,14 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useDiaryStore } from '../stores/useDiaryStore';
-import { DiaryStackParamList } from '../models/types';
+import { DiaryStackParamList, FoodItem, Macros } from '../models/types';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import FoodItemCard from '../components/FoodItemCard';
 import { colors } from '../theme/colors';
 
 type Route = RouteProp<DiaryStackParamList, 'MealDetail'>;
+
+function parseGrams(amount: string): number | null {
+  const match = amount.match(/(\d+(?:\.\d+)?)/);
+  return match ? parseFloat(match[1]) : null;
+}
 
 export default function MealDetailScreen() {
   const route = useRoute<Route>();
@@ -16,11 +21,39 @@ export default function MealDetailScreen() {
   const { mealId, date } = route.params;
   const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
+  const updateMealItem = useDiaryStore((s) => s.updateMealItem);
+  const [isEditing, setIsEditing] = useState(false);
+
   const entry = useMemo(
     () => entries[date] || { date, meals: [], totalMacros: EMPTY_MACROS },
     [entries, date]
   );
   const meal = entry.meals.find((m) => m.id === mealId);
+
+  const handleItemUpdate = useCallback(
+    (item: FoodItem, field: string, value: string) => {
+      if (field !== 'amount') return;
+
+      const originalGrams = parseGrams(item.amount);
+      const newGrams = parseGrams(value);
+
+      if (!originalGrams || !newGrams || originalGrams === 0) {
+        updateMealItem(date, mealId, item.id, value, item.macros);
+        return;
+      }
+
+      const ratio = newGrams / originalGrams;
+      const newMacros: Macros = {
+        calories: Math.round(item.macros.calories * ratio),
+        proteins: Math.round(item.macros.proteins * ratio * 10) / 10,
+        fats: Math.round(item.macros.fats * ratio * 10) / 10,
+        carbs: Math.round(item.macros.carbs * ratio * 10) / 10,
+      };
+
+      updateMealItem(date, mealId, item.id, value, newMacros);
+    },
+    [date, mealId, updateMealItem]
+  );
 
   if (!meal) {
     return (
@@ -67,7 +100,18 @@ export default function MealDetailScreen() {
           <Image source={{ uri: meal.photoUri }} style={styles.photo} />
         )}
 
-        <Text style={styles.sectionTitle}>Состав</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Состав</Text>
+          <TouchableOpacity
+            onPress={() => setIsEditing(!isEditing)}
+            style={styles.editButton}
+          >
+            <Text style={styles.editButtonText}>
+              {isEditing ? 'Готово' : 'Изменить'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {meal.items.map((item) => (
           <FoodItemCard
             key={item.id}
@@ -79,6 +123,8 @@ export default function MealDetailScreen() {
               fats: item.macros.fats,
               carbs: item.macros.carbs,
             }}
+            editable={isEditing}
+            onUpdate={(field, value) => handleItemUpdate(item, field, value)}
           />
         ))}
 
@@ -166,11 +212,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: colors.border,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 10,
+  },
+  editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(108, 92, 231, 0.12)',
+  },
+  editButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   totalCard: {
     backgroundColor: colors.surface,

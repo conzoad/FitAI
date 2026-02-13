@@ -25,8 +25,9 @@ export default function FoodItemCard({ item, editable = false, onUpdate }: Props
         {editable ? (
           <TextInput
             style={styles.amountInput}
-            value={item.amount}
-            onChangeText={(v) => onUpdate?.('amount', v)}
+            defaultValue={item.amount}
+            onEndEditing={(e) => onUpdate?.('amount', e.nativeEvent.text)}
+            keyboardType="numeric"
             placeholder="Кол-во"
             placeholderTextColor={colors.textMuted}
           />

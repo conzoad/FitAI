@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
         {lastMeals.length > 0 ? (
           lastMeals.map((meal) => (
-            <MealCard key={meal.id} meal={meal} onPress={() => { }} />
+            <MealCard key={meal.id} meal={meal} onPress={() => navigation.navigate('MealDetail', { mealId: meal.id, date: todayKey() })} />
           ))
         ) : (
           <EmptyState

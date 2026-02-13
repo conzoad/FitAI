@@ -19,19 +19,22 @@ import * as ImagePicker from 'expo-image-picker';
 import { analyzeTextMeal, analyzePhotoMeal } from '../services/gemini';
 import { searchProducts } from '../services/barcodeService';
 import { useDiaryStore } from '../stores/useDiaryStore';
-import { MealType, FoodItem, GeminiNutritionResponse, AddMealStackParamList, BarcodeProduct } from '../models/types';
+import { MealType, FoodItem, GeminiNutritionResponse, AddMealStackParamList, BarcodeProduct, SavedFoodItem } from '../models/types';
 import { MEAL_TYPE_LABELS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
 import { generateId } from '../utils/calculations';
 import FoodItemCard from '../components/FoodItemCard';
 import LoadingOverlay from '../components/LoadingOverlay';
 import { colors } from '../theme/colors';
+import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
 
 type InputMode = 'text' | 'photo' | 'search';
 type Nav = NativeStackNavigationProp<AddMealStackParamList, 'AddMeal'>;
 
 export default function AddMealScreen() {
   const addMeal = useDiaryStore((s) => s.addMeal);
+  const addToLibrary = useFoodLibraryStore((s) => s.addItems);
+  const searchLibrary = useFoodLibraryStore((s) => s.searchItems);
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProp<AddMealStackParamList, 'AddMeal'>>();
 
@@ -48,6 +51,7 @@ export default function AddMealScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<BarcodeProduct[]>([]);
   const [searching, setSearching] = useState(false);
+  const [libraryResults, setLibraryResults] = useState<SavedFoodItem[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -81,8 +85,15 @@ export default function AddMealScreen() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (text.trim().length < 2) {
       setSearchResults([]);
+      setLibraryResults([]);
       return;
     }
+
+    // Instant local search
+    const localResults = searchLibrary(text.trim());
+    setLibraryResults(localResults);
+
+    // Debounced API search
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
@@ -94,7 +105,7 @@ export default function AddMealScreen() {
         setSearching(false);
       }
     }, 500);
-  }, []);
+  }, [searchLibrary]);
 
   const handleSelectProduct = (product: BarcodeProduct) => {
     setResult({
@@ -113,6 +124,28 @@ export default function AddMealScreen() {
       confidence: 'high',
     });
     setSearchResults([]);
+    setSearchQuery('');
+    setSaved(false);
+  };
+
+  const handleSelectLibraryItem = (item: SavedFoodItem) => {
+    setResult({
+      items: [{
+        name: item.name,
+        amount: item.amount,
+        calories: item.macros.calories,
+        proteins: item.macros.proteins,
+        fats: item.macros.fats,
+        carbs: item.macros.carbs,
+      }],
+      totalCalories: item.macros.calories,
+      totalProteins: item.macros.proteins,
+      totalFats: item.macros.fats,
+      totalCarbs: item.macros.carbs,
+      confidence: 'high',
+    });
+    setSearchResults([]);
+    setLibraryResults([]);
     setSearchQuery('');
     setSaved(false);
   };
@@ -207,6 +240,8 @@ export default function AddMealScreen() {
       },
     }));
     addMeal(todayKey(), mealType, items, mode === 'search' ? 'text' : mode, photoUri || undefined);
+    const source = mode === 'search' ? 'barcode' as const : 'ai' as const;
+    addToLibrary(items, source);
     setSaved(true);
     Alert.alert('\u0413\u043E\u0442\u043E\u0432\u043E', '\u041F\u0440\u0438\u0451\u043C \u043F\u0438\u0449\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A');
   };
@@ -219,6 +254,7 @@ export default function AddMealScreen() {
     setSaved(false);
     setSearchQuery('');
     setSearchResults([]);
+    setLibraryResults([]);
   };
 
   const confidenceLabel = {
@@ -320,6 +356,37 @@ export default function AddMealScreen() {
                 placeholderTextColor={colors.textSecondary}
                 autoFocus
               />
+
+              {libraryResults.length > 0 && (
+                <View style={styles.searchResultsList}>
+                  <Text style={styles.searchSectionLabel}>{'\u041C\u043E\u0438 \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u044B'}</Text>
+                  {libraryResults.slice(0, 5).map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.searchResultItem}
+                      onPress={() => handleSelectLibraryItem(item)}
+                    >
+                      <View style={styles.searchResultInfo}>
+                        <Text style={styles.searchResultName} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.searchResultBrand} numberOfLines={1}>
+                          {item.amount}
+                        </Text>
+                      </View>
+                      <View style={styles.searchResultMacros}>
+                        <Text style={[styles.searchResultKcal, { color: colors.calories }]}>
+                          {item.macros.calories} {'\u043A\u043A\u0430\u043B'}
+                        </Text>
+                        <Text style={styles.searchResultBju}>
+                          {'\u0411'}{item.macros.proteins} {'\u0416'}{item.macros.fats} {'\u0423'}{item.macros.carbs}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
               {searching && (
                 <View style={styles.searchingRow}>
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -328,6 +395,9 @@ export default function AddMealScreen() {
               )}
               {searchResults.length > 0 && (
                 <View style={styles.searchResultsList}>
+                  {libraryResults.length > 0 && (
+                    <Text style={styles.searchSectionLabel}>Open Food Facts</Text>
+                  )}
                   {searchResults.map((product, idx) => (
                     <TouchableOpacity
                       key={`${product.barcode}-${idx}`}
@@ -356,7 +426,7 @@ export default function AddMealScreen() {
                   ))}
                 </View>
               )}
-              {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+              {!searching && searchQuery.length >= 2 && searchResults.length === 0 && libraryResults.length === 0 && (
                 <Text style={styles.noSearchResults}>{'\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E'}</Text>
               )}
             </View>
@@ -622,6 +692,15 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingVertical: 24,
+  },
+  searchSectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginTop: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   // Results
   resultContainer: {

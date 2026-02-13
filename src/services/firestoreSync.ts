@@ -4,7 +4,8 @@ import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useChatStore } from '../stores/useChatStore';
-import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage } from '../models/types';
+import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
+import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage, SavedFoodItem } from '../models/types';
 
 // ── Debounce helper ──
 
@@ -20,7 +21,9 @@ function debounce<T extends (...args: any[]) => void>(fn: T, ms: number): T {
 
 async function saveProfile(uid: string, profile: UserProfile): Promise<void> {
   try {
+    console.log('[Sync] Saving profile for uid:', uid);
     await setDoc(doc(db, 'users', uid), profile);
+    console.log('[Sync] Profile saved OK');
   } catch (e) {
     console.warn('[Sync] saveProfile error:', e);
   }
@@ -28,7 +31,9 @@ async function saveProfile(uid: string, profile: UserProfile): Promise<void> {
 
 async function saveDiaryEntry(uid: string, date: string, entry: DailyEntry): Promise<void> {
   try {
+    console.log('[Sync] Saving diary entry for date:', date);
     await setDoc(doc(db, 'users', uid, 'diary', date), entry);
+    console.log('[Sync] Diary entry saved OK:', date);
   } catch (e) {
     console.warn('[Sync] saveDiaryEntry error:', e);
   }
@@ -36,7 +41,9 @@ async function saveDiaryEntry(uid: string, date: string, entry: DailyEntry): Pro
 
 async function saveWorkoutSessions(uid: string, date: string, sessions: WorkoutSession[]): Promise<void> {
   try {
+    console.log('[Sync] Saving workout sessions for date:', date);
     await setDoc(doc(db, 'users', uid, 'workouts', date), { sessions });
+    console.log('[Sync] Workout sessions saved OK:', date);
   } catch (e) {
     console.warn('[Sync] saveWorkoutSessions error:', e);
   }
@@ -44,7 +51,9 @@ async function saveWorkoutSessions(uid: string, date: string, sessions: WorkoutS
 
 async function saveWorkoutPrograms(uid: string, programs: WorkoutProgram[]): Promise<void> {
   try {
+    console.log('[Sync] Saving workout programs, count:', programs.length);
     await setDoc(doc(db, 'users', uid, 'settings', 'programs'), { programs });
+    console.log('[Sync] Workout programs saved OK');
   } catch (e) {
     console.warn('[Sync] saveWorkoutPrograms error:', e);
   }
@@ -52,9 +61,21 @@ async function saveWorkoutPrograms(uid: string, programs: WorkoutProgram[]): Pro
 
 async function saveChatMessages(uid: string, messages: ChatMessage[]): Promise<void> {
   try {
+    console.log('[Sync] Saving chat messages, count:', messages.length);
     await setDoc(doc(db, 'users', uid, 'settings', 'chat'), { messages });
+    console.log('[Sync] Chat messages saved OK');
   } catch (e) {
     console.warn('[Sync] saveChatMessages error:', e);
+  }
+}
+
+async function saveFoodLibrary(uid: string, items: Record<string, SavedFoodItem>): Promise<void> {
+  try {
+    console.log('[Sync] Saving food library, count:', Object.keys(items).length);
+    await setDoc(doc(db, 'users', uid, 'settings', 'foodLibrary'), { items });
+    console.log('[Sync] Food library saved OK');
+  } catch (e) {
+    console.warn('[Sync] saveFoodLibrary error:', e);
   }
 }
 
@@ -121,9 +142,23 @@ async function loadChatMessages(uid: string): Promise<ChatMessage[]> {
   }
 }
 
+async function loadFoodLibrary(uid: string): Promise<Record<string, SavedFoodItem>> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'settings', 'foodLibrary'));
+    return snap.exists()
+      ? (snap.data() as { items: Record<string, SavedFoodItem> }).items || {}
+      : {};
+  } catch (e) {
+    console.warn('[Sync] loadFoodLibrary error:', e);
+    return {};
+  }
+}
+
 // ── Initial load (on login) ──
 
 export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
+  console.log('[Sync] loadFromFirestoreIfEmpty started, uid:', uid);
+
   // Profile
   const profile = useProfileStore.getState().profile;
   if (!profile.isOnboarded) {
@@ -162,11 +197,21 @@ export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
       useChatStore.setState({ messages: remoteMsgs });
     }
   }
+
+  // Food Library
+  const foodLib = useFoodLibraryStore.getState().items;
+  if (Object.keys(foodLib).length === 0) {
+    const remoteLib = await loadFoodLibrary(uid);
+    if (Object.keys(remoteLib).length > 0) {
+      useFoodLibraryStore.setState({ items: remoteLib });
+    }
+  }
 }
 
 // ── Sync listeners ──
 
 export function startSyncListeners(uid: string): () => void {
+  console.log('[Sync] startSyncListeners called, uid:', uid);
   const unsubscribers: (() => void)[] = [];
 
   // Profile sync (debounce 2s)
@@ -240,6 +285,22 @@ export function startSyncListeners(uid: string): () => void {
       if (state.messages.length !== prevMsgCount) {
         prevMsgCount = state.messages.length;
         debouncedSaveChat(state.messages);
+      }
+    })
+  );
+
+  // Food Library sync (debounce 2s)
+  let prevLibSize = Object.keys(useFoodLibraryStore.getState().items).length;
+  const debouncedSaveLibrary = debounce((items: Record<string, SavedFoodItem>) => {
+    saveFoodLibrary(uid, items);
+  }, 2000);
+
+  unsubscribers.push(
+    useFoodLibraryStore.subscribe((state) => {
+      const newSize = Object.keys(state.items).length;
+      if (newSize !== prevLibSize) {
+        prevLibSize = newSize;
+        debouncedSaveLibrary(state.items);
       }
     })
   );

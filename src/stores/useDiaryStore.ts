@@ -52,6 +52,13 @@ interface DiaryState {
     photoUri?: string
   ) => void;
   removeMeal: (date: string, mealId: string) => void;
+  updateMealItem: (
+    date: string,
+    mealId: string,
+    itemId: string,
+    newAmount: string,
+    newMacros: Macros
+  ) => void;
   getEntry: (date: string) => DailyEntry;
   getTodayEntry: () => DailyEntry;
   getWeekEntries: () => DailyEntry[];
@@ -98,6 +105,39 @@ export const useDiaryStore = create<DiaryState>()(
           if (!existing) return state;
 
           const updatedMeals = existing.meals.filter((m) => m.id !== mealId);
+
+          return {
+            entries: {
+              ...state.entries,
+              [date]: {
+                date,
+                meals: updatedMeals,
+                totalMacros: sumMealMacros(updatedMeals),
+              },
+            },
+          };
+        });
+      },
+
+      updateMealItem: (date, mealId, itemId, newAmount, newMacros) => {
+        set((state) => {
+          const existing = state.entries[date];
+          if (!existing) return state;
+
+          const updatedMeals = existing.meals.map((meal) => {
+            if (meal.id !== mealId) return meal;
+
+            const updatedItems = meal.items.map((item) => {
+              if (item.id !== itemId) return item;
+              return { ...item, amount: newAmount, macros: newMacros };
+            });
+
+            return {
+              ...meal,
+              items: updatedItems,
+              totalMacros: sumItemMacros(updatedItems),
+            };
+          });
 
           return {
             entries: {
