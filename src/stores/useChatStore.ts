@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ChatMessage } from '../models/types';
+import { ChatMessage, ChatAction } from '../models/types';
 
 const generateId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -9,7 +9,7 @@ const generateId = () =>
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
-  addMessage: (role: 'user' | 'assistant', content: string) => void;
+  addMessage: (role: 'user' | 'assistant', content: string, actions?: ChatAction[]) => void;
   setLoading: (loading: boolean) => void;
   clearHistory: () => void;
 }
@@ -20,12 +20,13 @@ export const useChatStore = create<ChatState>()(
       messages: [],
       isLoading: false,
 
-      addMessage: (role, content) => {
+      addMessage: (role, content, actions) => {
         const message: ChatMessage = {
           id: generateId(),
           role,
           content,
           timestamp: new Date().toISOString(),
+          ...(actions && actions.length > 0 ? { actions } : {}),
         };
 
         set((state) => ({

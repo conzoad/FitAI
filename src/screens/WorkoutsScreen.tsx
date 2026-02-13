@@ -1,12 +1,14 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SectionList, Alert } from 'react-native';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SectionList, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
-import { EXERCISES } from '../services/exerciseDatabase';
+import { getAllExercises } from '../services/exerciseDatabase';
 import WorkoutCard from '../components/WorkoutCard';
+import WorkoutCalendar from '../components/WorkoutCalendar';
 import EmptyState from '../components/EmptyState';
 import { colors } from '../theme/colors';
 import { format, subDays } from 'date-fns';
@@ -19,8 +21,20 @@ export default function WorkoutsScreen() {
   const sessions = useWorkoutStore((s) => s.sessions);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const programs = useWorkoutStore((s) => s.programs);
+  const schedule = useWorkoutStore((s) => s.schedule);
   const startWorkoutFromProgram = useWorkoutStore((s) => s.startWorkoutFromProgram);
   const deleteProgram = useWorkoutStore((s) => s.deleteProgram);
+  const markMissedWorkouts = useWorkoutStore((s) => s.markMissedWorkouts);
+  const removeScheduledWorkout = useWorkoutStore((s) => s.removeScheduledWorkout);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const allExercises = useMemo(() => getAllExercises(customExercises), [customExercises]);
+
+  useEffect(() => {
+    markMissedWorkouts();
+  }, [markMissedWorkouts]);
 
   const recentSessions = useMemo(() => {
     const days = Array.from({ length: 30 }, (_, i) =>
@@ -59,7 +73,7 @@ export default function WorkoutsScreen() {
       Alert.alert('Внимание', 'У вас уже есть активная тренировка. Завершите или отмените её.');
       return;
     }
-    startWorkoutFromProgram(program, EXERCISES);
+    startWorkoutFromProgram(program, allExercises);
     navigation.navigate('StartWorkout');
   };
 
@@ -70,116 +84,232 @@ export default function WorkoutsScreen() {
     ]);
   };
 
+  const handleDayPress = useCallback((date: string) => {
+    setSelectedDate((prev) => (prev === date ? null : date));
+  }, []);
+
+  const handleStartScheduled = useCallback((date: string) => {
+    const scheduled = schedule[date];
+    if (!scheduled) return;
+    const program = programs.find((p) => p.id === scheduled.programId);
+    if (!program) {
+      Alert.alert('Ошибка', 'Программа не найдена.');
+      return;
+    }
+    if (activeWorkout) {
+      Alert.alert('Внимание', 'У вас уже есть активная тренировка. Завершите или отмените её.');
+      return;
+    }
+    startWorkoutFromProgram(program, allExercises);
+    navigation.navigate('StartWorkout');
+  }, [schedule, programs, activeWorkout, startWorkoutFromProgram, allExercises, navigation]);
+
+  const handleRemoveScheduled = useCallback((date: string) => {
+    Alert.alert('Убрать из расписания?', '', [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Убрать', style: 'destructive', onPress: () => removeScheduledWorkout(date) },
+    ]);
+  }, [removeScheduledWorkout]);
+
+  const selectedDayInfo = useMemo(() => {
+    if (!selectedDate) return null;
+    const scheduled = schedule[selectedDate];
+    const daySessions = sessions[selectedDate];
+    return { scheduled, sessions: daySessions || [] };
+  }, [selectedDate, schedule, sessions]);
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Тренировки</Text>
-        <TouchableOpacity
-          style={styles.startButton}
-          onPress={() => navigation.navigate('StartWorkout')}
-        >
-          <Text style={styles.startButtonText}>
-            {activeWorkout ? 'Продолжить' : 'Начать'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{totalWorkouts}</Text>
-          <Text style={styles.statLabel}>Всего тренировок</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Тренировки</Text>
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={() => navigation.navigate('StartWorkout')}
+          >
+            <Text style={styles.startButtonText}>
+              {activeWorkout ? 'Продолжить' : 'Начать'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: colors.volume }]}>
-            {weekVolume >= 1000
-              ? `${(weekVolume / 1000).toFixed(1)}т`
-              : `${weekVolume}кг`}
-          </Text>
-          <Text style={styles.statLabel}>Объём за неделю</Text>
-        </View>
-      </View>
 
-      <View style={styles.buttonsRow}>
-        <TouchableOpacity
-          style={styles.catalogButton}
-          onPress={() => navigation.navigate('ExerciseList', { onSelect: false })}
-        >
-          <Text style={styles.catalogIcon}>📖</Text>
-          <Text style={styles.catalogText}>Каталог упражнений</Text>
-          <Text style={styles.catalogArrow}>→</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Programs Section */}
-      {(programs.length > 0 || true) && (
-        <View style={styles.programsSection}>
-          <View style={styles.programsHeader}>
-            <Text style={styles.programsTitle}>Мои программы</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('CreateProgram')}>
-              <View style={styles.addProgramBadge}>
-                <Text style={styles.addProgramText}>+ Создать</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {programs.length === 0 ? (
-            <View style={styles.noProgramsCard}>
-              <Text style={styles.noProgramsText}>
-                Создайте программу, чтобы быстро начинать тренировки
-              </Text>
-            </View>
-          ) : (
-            programs.map((program) => (
-              <View key={program.id} style={styles.programCard}>
-                <View style={styles.programInfo}>
-                  <Text style={styles.programName}>{program.name}</Text>
-                  <Text style={styles.programMeta}>
-                    {program.exercises.length} упр.
-                  </Text>
-                </View>
-                <View style={styles.programActions}>
-                  <TouchableOpacity
-                    style={styles.programStartBtn}
-                    onPress={() => handleStartFromProgram(program.id)}
-                  >
-                    <Text style={styles.programStartText}>Начать</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteProgram(program.id)}
-                  >
-                    <Text style={styles.programDeleteBtn}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-      )}
-
-      {recentSessions.length === 0 ? (
-        <EmptyState icon="🏋️" title="Нет тренировок" subtitle="Начните первую тренировку!" />
-      ) : (
-        <SectionList
-          sections={recentSessions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <WorkoutCard
-              session={item}
-              onPress={() =>
-                navigation.navigate('WorkoutDetail', {
-                  sessionId: item.id,
-                  date: item.date,
-                })
-              }
-            />
-          )}
-          renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionHeader}>{section.title}</Text>
-          )}
-          contentContainerStyle={styles.listContent}
-          stickySectionHeadersEnabled={false}
+        {/* Calendar */}
+        <WorkoutCalendar
+          schedule={schedule}
+          sessions={sessions}
+          activeWorkout={activeWorkout}
+          onDayPress={handleDayPress}
+          selectedDate={selectedDate}
         />
-      )}
+
+        {/* Selected day info */}
+        {selectedDate && selectedDayInfo && (
+          <View style={styles.dayInfoCard}>
+            <Text style={styles.dayInfoDate}>
+              {format(new Date(selectedDate), 'd MMMM, EEEE', { locale: ru })}
+            </Text>
+            {selectedDayInfo.scheduled && (
+              <View style={styles.scheduledInfo}>
+                <View style={[styles.statusDot, { backgroundColor: selectedDayInfo.scheduled.status === 'completed' ? colors.success : selectedDayInfo.scheduled.status === 'missed' ? colors.error : selectedDayInfo.scheduled.status === 'inProgress' ? colors.workout : '#74B9FF' }]} />
+                <Text style={styles.scheduledName}>{selectedDayInfo.scheduled.programName}</Text>
+                <Text style={styles.scheduledStatus}>
+                  {selectedDayInfo.scheduled.status === 'planned' && 'Запланирована'}
+                  {selectedDayInfo.scheduled.status === 'completed' && 'Выполнена'}
+                  {selectedDayInfo.scheduled.status === 'missed' && 'Пропущена'}
+                  {selectedDayInfo.scheduled.status === 'inProgress' && 'В процессе'}
+                </Text>
+              </View>
+            )}
+            {selectedDayInfo.scheduled && (selectedDayInfo.scheduled.status === 'planned' || selectedDayInfo.scheduled.status === 'missed') && (
+              <View style={styles.dayActions}>
+                <TouchableOpacity
+                  style={styles.dayActionBtn}
+                  onPress={() => handleStartScheduled(selectedDate)}
+                >
+                  <Text style={styles.dayActionBtnText}>
+                    {selectedDayInfo.scheduled.status === 'missed' ? 'Начать сейчас' : 'Начать'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dayRemoveBtn}
+                  onPress={() => handleRemoveScheduled(selectedDate)}
+                >
+                  <Text style={styles.dayRemoveBtnText}>Убрать</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {selectedDayInfo.scheduled && selectedDayInfo.scheduled.status === 'completed' && selectedDayInfo.scheduled.sessionId && (
+              <TouchableOpacity
+                style={styles.dayActionBtn}
+                onPress={() => navigation.navigate('WorkoutDetail', { sessionId: selectedDayInfo.scheduled!.sessionId!, date: selectedDate })}
+              >
+                <Text style={styles.dayActionBtnText}>Подробнее</Text>
+              </TouchableOpacity>
+            )}
+            {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length > 0 && (
+              <View>
+                {selectedDayInfo.sessions.map((s) => (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={styles.miniSessionCard}
+                    onPress={() => navigation.navigate('WorkoutDetail', { sessionId: s.id, date: selectedDate })}
+                  >
+                    <Text style={styles.miniSessionText}>
+                      {s.exercises.length} упр. · {s.totalVolume >= 1000 ? `${(s.totalVolume / 1000).toFixed(1)}т` : `${s.totalVolume}кг`} · {s.duration} мин
+                    </Text>
+                    <Text style={styles.miniSessionArrow}>→</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length === 0 && (
+              <Text style={styles.dayInfoEmpty}>Нет тренировок</Text>
+            )}
+          </View>
+        )}
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{totalWorkouts}</Text>
+            <Text style={styles.statLabel}>Всего тренировок</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statValue, { color: colors.volume }]}>
+              {weekVolume >= 1000
+                ? `${(weekVolume / 1000).toFixed(1)}т`
+                : `${weekVolume}кг`}
+            </Text>
+            <Text style={styles.statLabel}>Объём за неделю</Text>
+          </View>
+        </View>
+
+        <View style={styles.buttonsRow}>
+          <TouchableOpacity
+            style={styles.catalogButton}
+            onPress={() => navigation.navigate('ExerciseList', { onSelect: false })}
+          >
+            <Text style={styles.catalogIcon}>📖</Text>
+            <Text style={styles.catalogText}>Каталог упражнений</Text>
+            <Text style={styles.catalogArrow}>→</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Programs Section */}
+        {(programs.length > 0 || true) && (
+          <View style={styles.programsSection}>
+            <View style={styles.programsHeader}>
+              <Text style={styles.programsTitle}>Мои программы</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('CreateProgram')}>
+                <View style={styles.addProgramBadge}>
+                  <Text style={styles.addProgramText}>+ Создать</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {programs.length === 0 ? (
+              <View style={styles.noProgramsCard}>
+                <Text style={styles.noProgramsText}>
+                  Создайте программу, чтобы быстро начинать тренировки
+                </Text>
+              </View>
+            ) : (
+              programs.map((program) => (
+                <View key={program.id} style={styles.programCard}>
+                  <View style={styles.programInfo}>
+                    <Text style={styles.programName}>{program.name}</Text>
+                    <Text style={styles.programMeta}>
+                      {program.exercises.length} упр.
+                    </Text>
+                  </View>
+                  <View style={styles.programActions}>
+                    <TouchableOpacity
+                      style={styles.programStartBtn}
+                      onPress={() => handleStartFromProgram(program.id)}
+                    >
+                      <Text style={styles.programStartText}>Начать</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteProgram(program.id)}
+                    >
+                      <Text style={styles.programDeleteBtn}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {/* Recent sessions */}
+        {recentSessions.length > 0 && (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentTitle}>Последние тренировки</Text>
+            {recentSessions.map((section) => (
+              <View key={section.title}>
+                <Text style={styles.sectionHeader}>{section.title}</Text>
+                {section.data.map((item) => (
+                  <WorkoutCard
+                    key={item.id}
+                    session={item}
+                    onPress={() =>
+                      navigation.navigate('WorkoutDetail', {
+                        sessionId: item.id,
+                        date: item.date,
+                      })
+                    }
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {recentSessions.length === 0 && (
+          <EmptyState icon="🏋️" title="Нет тренировок" subtitle="Начните первую тренировку!" />
+        )}
+
+        <View style={{ height: 30 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -373,5 +503,102 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 30,
+  },
+  // Calendar day info
+  dayInfoCard: {
+    marginHorizontal: 20,
+    marginBottom: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  dayInfoDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    textTransform: 'capitalize',
+    marginBottom: 8,
+  },
+  scheduledInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  scheduledName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  scheduledStatus: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  dayActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dayActionBtn: {
+    backgroundColor: colors.workout,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  dayActionBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  dayRemoveBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+  },
+  dayRemoveBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.error,
+  },
+  dayInfoEmpty: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  miniSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  miniSessionText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  miniSessionArrow: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  recentSection: {
+    paddingHorizontal: 20,
+  },
+  recentTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 10,
   },
 });

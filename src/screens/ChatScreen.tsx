@@ -14,11 +14,13 @@ import { useChatStore } from '../stores/useChatStore';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { sendChatMessage } from '../services/gemini';
+import { getAllExercises } from '../services/exerciseDatabase';
 import { GOAL_LABELS, MEAL_TYPE_LABELS, EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
-import { format, subDays } from 'date-fns';
-import type { DailyEntry, MealType } from '../models/types';
+import { format, subDays, addDays } from 'date-fns';
+import type { DailyEntry, MealType, ChatAction, AIProgramSuggestion } from '../models/types';
 import ChatMessageComponent from '../components/ChatMessage';
 import { colors } from '../theme/colors';
 
@@ -28,8 +30,15 @@ export default function ChatScreen() {
   const entries = useDiaryStore((s) => s.entries);
   const todayEntry = entries[todayKey()] || { date: todayKey(), meals: [], totalMacros: EMPTY_MACROS };
   const workoutSessions = useWorkoutStore((s) => s.sessions);
+  const schedule = useWorkoutStore((s) => s.schedule);
+  const programs = useWorkoutStore((s) => s.programs);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
+
+  const exerciseIds = useMemo(() => {
+    return getAllExercises(customExercises).map((e) => `${e.id} (${e.name})`).join(', ');
+  }, [customExercises]);
 
   const workoutContext = useMemo(() => {
     const lines: string[] = [];
@@ -95,6 +104,75 @@ export default function ChatScreen() {
     return lines.join('\n');
   }, [entries]);
 
+  const scheduleContext = useMemo(() => {
+    const lines: string[] = [];
+    const today = new Date();
+    // Past 7 days + next 7 days
+    for (let i = -7; i <= 7; i++) {
+      const date = i < 0 ? subDays(today, -i) : addDays(today, i);
+      const key = format(date, 'yyyy-MM-dd');
+      const entry = schedule[key];
+      if (entry) {
+        const statusMap: Record<string, string> = {
+          planned: 'запланирована',
+          completed: 'выполнена',
+          inProgress: 'в процессе',
+          missed: 'пропущена',
+        };
+        lines.push(`- ${key}: ${entry.programName} (${statusMap[entry.status] || entry.status})`);
+      }
+    }
+    return lines.length > 0 ? lines.join('\n') : 'Нет запланированных тренировок';
+  }, [schedule]);
+
+  const programsContext = useMemo(() => {
+    if (programs.length === 0) return 'Нет сохранённых программ';
+    return programs.map((p) =>
+      `- ${p.name}: ${p.exercises.length} упр.`
+    ).join('\n');
+  }, [programs]);
+
+  const parseAIResponse = (response: string): { displayText: string; actions: ChatAction[] } => {
+    const actions: ChatAction[] = [];
+    const marker = '---AI_PROGRAM---';
+    const endMarker = '---END_AI_PROGRAM---';
+    let displayText = response;
+
+    const startIdx = response.indexOf(marker);
+    if (startIdx !== -1) {
+      const endIdx = response.indexOf(endMarker);
+      if (endIdx !== -1) {
+        const jsonStr = response.slice(startIdx + marker.length, endIdx).trim();
+        displayText = (response.slice(0, startIdx) + response.slice(endIdx + endMarker.length)).trim();
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const programsList: AIProgramSuggestion[] = parsed.programs || [];
+
+          for (const prog of programsList) {
+            actions.push({
+              type: 'addProgram',
+              label: prog.name,
+              data: prog,
+            });
+
+            if (prog.scheduleDays && prog.scheduleDays.length > 0) {
+              actions.push({
+                type: 'scheduleWorkout',
+                label: `${prog.name} (${prog.scheduleDays.join(', ')})`,
+                data: prog,
+              });
+            }
+          }
+        } catch {
+          // Failed to parse AI program block, ignore
+        }
+      }
+    }
+
+    return { displayText, actions };
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -123,10 +201,14 @@ export default function ChatScreen() {
         TODAY_C: String(Math.round(todayEntry.totalMacros.carbs)),
         WORKOUT_CONTEXT: workoutContext,
         FOOD_CONTEXT: foodContext,
+        SCHEDULE_CONTEXT: scheduleContext,
+        PROGRAMS_CONTEXT: programsContext,
+        EXERCISE_IDS: exerciseIds,
       };
 
       const response = await sendChatMessage(text, chatHistory, userContext);
-      addMessage('assistant', response);
+      const { displayText, actions } = parseAIResponse(response);
+      addMessage('assistant', displayText, actions.length > 0 ? actions : undefined);
     } catch (e: any) {
       addMessage('assistant', 'Извините, произошла ошибка. Попробуйте ещё раз.');
     } finally {

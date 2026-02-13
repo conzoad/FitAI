@@ -6,7 +6,7 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
-import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage, SavedFoodItem, Exercise } from '../models/types';
+import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage, SavedFoodItem, Exercise, ScheduledWorkout } from '../models/types';
 
 // ── Debounce helper ──
 
@@ -87,6 +87,16 @@ async function saveExercisePrefs(uid: string, data: { favorites: string[]; color
     console.log('[Sync] Exercise prefs saved OK');
   } catch (e) {
     console.warn('[Sync] saveExercisePrefs error:', e);
+  }
+}
+
+async function saveSchedule(uid: string, schedule: Record<string, ScheduledWorkout>): Promise<void> {
+  try {
+    console.log('[Sync] Saving schedule, count:', Object.keys(schedule).length);
+    await setDoc(doc(db, 'users', uid, 'settings', 'schedule'), { schedule });
+    console.log('[Sync] Schedule saved OK');
+  } catch (e) {
+    console.warn('[Sync] saveSchedule error:', e);
   }
 }
 
@@ -181,6 +191,18 @@ async function loadExercisePrefs(uid: string): Promise<{ favorites: string[]; co
   }
 }
 
+async function loadSchedule(uid: string): Promise<Record<string, ScheduledWorkout>> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'settings', 'schedule'));
+    return snap.exists()
+      ? (snap.data() as { schedule: Record<string, ScheduledWorkout> }).schedule || {}
+      : {};
+  } catch (e) {
+    console.warn('[Sync] loadSchedule error:', e);
+    return {};
+  }
+}
+
 // ── Initial load (on login) ──
 
 export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
@@ -242,6 +264,15 @@ export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
       useExercisePrefsStore.setState(remotePrefs);
     }
   }
+
+  // Schedule
+  const schedule = useWorkoutStore.getState().schedule;
+  if (Object.keys(schedule).length === 0) {
+    const remoteSchedule = await loadSchedule(uid);
+    if (Object.keys(remoteSchedule).length > 0) {
+      useWorkoutStore.setState({ schedule: remoteSchedule });
+    }
+  }
 }
 
 // ── Sync listeners ──
@@ -296,6 +327,12 @@ export function startSyncListeners(uid: string): () => void {
     saveWorkoutPrograms(uid, programs);
   }, 2000);
 
+  // Schedule sync (debounce 2s)
+  let prevScheduleRef = useWorkoutStore.getState().schedule;
+  const debouncedSaveSchedule = debounce((schedule: Record<string, ScheduledWorkout>) => {
+    saveSchedule(uid, schedule);
+  }, 2000);
+
   unsubscribers.push(
     useWorkoutStore.subscribe((state) => {
       // Only sync when sessions reference changes (not activeWorkout changes)
@@ -306,6 +343,10 @@ export function startSyncListeners(uid: string): () => void {
       if (state.programs.length !== prevProgramsLen) {
         prevProgramsLen = state.programs.length;
         debouncedSavePrograms(state.programs);
+      }
+      if (state.schedule !== prevScheduleRef) {
+        prevScheduleRef = state.schedule;
+        debouncedSaveSchedule(state.schedule);
       }
     })
   );

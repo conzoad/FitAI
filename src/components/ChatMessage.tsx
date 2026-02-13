@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { ChatMessage as ChatMessageType } from '../models/types';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ChatMessage as ChatMessageType, ChatAction } from '../models/types';
+import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { colors } from '../theme/colors';
 
 interface Props {
@@ -40,6 +41,64 @@ function renderFormattedText(text: string, isUser: boolean) {
   return parts;
 }
 
+function ActionButton({ action }: { action: ChatAction }) {
+  const [applied, setApplied] = useState(false);
+  const addProgram = useWorkoutStore((s) => s.addProgram);
+  const addScheduledWorkout = useWorkoutStore((s) => s.addScheduledWorkout);
+
+  const handlePress = () => {
+    if (applied) return;
+
+    if (action.type === 'addProgram') {
+      const exercises = action.data.exercises.map((e) => ({
+        exerciseId: e.exerciseId,
+        targetSets: e.targetSets,
+        targetReps: e.targetReps,
+      }));
+      addProgram(action.data.name, exercises);
+    }
+
+    if (action.type === 'scheduleWorkout') {
+      // First ensure the program is added, then schedule
+      const exercises = action.data.exercises.map((e) => ({
+        exerciseId: e.exerciseId,
+        targetSets: e.targetSets,
+        targetReps: e.targetReps,
+      }));
+      // We need a program ID — add the program and get the latest
+      addProgram(action.data.name, exercises);
+      const programs = useWorkoutStore.getState().programs;
+      const newProgram = programs[programs.length - 1];
+
+      if (newProgram && action.data.scheduleDays) {
+        for (const day of action.data.scheduleDays) {
+          addScheduledWorkout(day, newProgram.id, newProgram.name);
+        }
+      }
+    }
+
+    setApplied(true);
+  };
+
+  const icon = action.type === 'addProgram' ? '\u{1F4CB}' : '\u{1F4C5}';
+  const label = action.type === 'addProgram'
+    ? `${icon} ${action.label}`
+    : `${icon} ${action.label}`;
+
+  return (
+    <TouchableOpacity
+      style={[styles.actionBtn, applied && styles.actionBtnApplied]}
+      onPress={handlePress}
+      disabled={applied}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.actionBtnText, applied && styles.actionBtnTextApplied]}>
+        {applied ? `\u2713 ${action.label}` : label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function ChatMessage({ message }: Props) {
   const isUser = message.role === 'user';
 
@@ -50,10 +109,19 @@ export default function ChatMessage({ message }: Props) {
           <Text style={styles.avatarText}>🤖</Text>
         </View>
       )}
-      <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
-        <Text style={styles.textWrap}>
-          {renderFormattedText(message.content, isUser)}
-        </Text>
+      <View style={styles.contentColumn}>
+        <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+          <Text style={styles.textWrap}>
+            {renderFormattedText(message.content, isUser)}
+          </Text>
+        </View>
+        {!isUser && message.actions && message.actions.length > 0 && (
+          <View style={styles.actionsContainer}>
+            {message.actions.map((action, idx) => (
+              <ActionButton key={idx} action={action} />
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -87,8 +155,10 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 14,
   },
-  bubble: {
+  contentColumn: {
     maxWidth: '75%',
+  },
+  bubble: {
     borderRadius: 18,
     padding: 12,
     paddingHorizontal: 16,
@@ -122,5 +192,29 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: '#FFFFFF',
+  },
+  actionsContainer: {
+    marginTop: 6,
+    gap: 6,
+  },
+  actionBtn: {
+    backgroundColor: 'rgba(162, 155, 254, 0.12)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.workout,
+  },
+  actionBtnApplied: {
+    backgroundColor: 'rgba(85, 239, 196, 0.12)',
+    borderColor: colors.success,
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.workout,
+  },
+  actionBtnTextApplied: {
+    color: colors.success,
   },
 });

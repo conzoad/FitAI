@@ -60,6 +60,24 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  actions?: ChatAction[];
+}
+
+export interface ChatAction {
+  type: 'addProgram' | 'scheduleWorkout';
+  label: string;
+  data: AIProgramSuggestion;
+}
+
+export interface AIProgramSuggestion {
+  name: string;
+  exercises: {
+    exerciseId: string;
+    exerciseName: string;
+    targetSets: number;
+    targetReps: string;
+  }[];
+  scheduleDays?: string[];
 }
 
 export interface GeminiNutritionResponse {
@@ -253,6 +271,19 @@ export interface WorkoutProgram {
   name: string;
   exercises: ProgramExercise[];
   createdAt: string;
+}
+
+// ===== Workout Schedule =====
+
+export type ScheduleStatus = 'planned' | 'completed' | 'inProgress' | 'missed';
+
+export interface ScheduledWorkout {
+  id: string;
+  date: string;
+  programId: string;
+  programName: string;
+  status: ScheduleStatus;
+  sessionId?: string;
 }
 
 // ===== Navigation =====

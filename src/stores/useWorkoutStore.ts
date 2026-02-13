@@ -2,13 +2,14 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
-import { Exercise, WorkoutExercise, WorkoutSession, WorkoutSet, WorkoutProgram, ProgramExercise } from '../models/types';
+import { Exercise, WorkoutExercise, WorkoutSession, WorkoutSet, WorkoutProgram, ProgramExercise, ScheduledWorkout, ScheduleStatus } from '../models/types';
 import { generateId } from '../utils/calculations';
 
 interface WorkoutState {
   sessions: Record<string, WorkoutSession[]>;
   activeWorkout: WorkoutSession | null;
   programs: WorkoutProgram[];
+  schedule: Record<string, ScheduledWorkout>;
 
   startWorkout: () => void;
   startWorkoutFromProgram: (program: WorkoutProgram, exercises: Exercise[]) => void;
@@ -22,6 +23,10 @@ interface WorkoutState {
   deleteSession: (date: string, sessionId: string) => void;
   addProgram: (name: string, exercises: ProgramExercise[]) => void;
   deleteProgram: (programId: string) => void;
+  addScheduledWorkout: (date: string, programId: string, programName: string) => void;
+  removeScheduledWorkout: (date: string) => void;
+  updateScheduleStatus: (date: string, status: ScheduleStatus, sessionId?: string) => void;
+  markMissedWorkouts: () => void;
 }
 
 function calculateVolume(exercises: WorkoutExercise[]): number {
@@ -38,6 +43,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       sessions: {},
       activeWorkout: null,
       programs: [],
+      schedule: {},
 
       startWorkout: () => {
         const now = Date.now();
@@ -155,12 +161,21 @@ export const useWorkoutStore = create<WorkoutState>()(
           };
           const dateKey = completed.date;
           const existing = state.sessions[dateKey] || [];
+          const updatedSchedule = { ...state.schedule };
+          if (updatedSchedule[dateKey] && updatedSchedule[dateKey].status !== 'completed') {
+            updatedSchedule[dateKey] = {
+              ...updatedSchedule[dateKey],
+              status: 'completed',
+              sessionId: completed.id,
+            };
+          }
           return {
             activeWorkout: null,
             sessions: {
               ...state.sessions,
               [dateKey]: [...existing, completed],
             },
+            schedule: updatedSchedule,
           };
         });
       },
@@ -185,6 +200,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       startWorkoutFromProgram: (program, exercises) => {
         const now = Date.now();
+        const today = format(new Date(), 'yyyy-MM-dd');
         const exerciseMap = new Map(exercises.map((e) => [e.id, e]));
         const workoutExercises: WorkoutExercise[] = [];
 
@@ -201,15 +217,25 @@ export const useWorkoutStore = create<WorkoutState>()(
           }
         }
 
+        const state = get();
+        const updatedSchedule = { ...state.schedule };
+        if (updatedSchedule[today] && updatedSchedule[today].status === 'planned') {
+          updatedSchedule[today] = {
+            ...updatedSchedule[today],
+            status: 'inProgress',
+          };
+        }
+
         set({
           activeWorkout: {
             id: generateId(),
-            date: format(new Date(), 'yyyy-MM-dd'),
+            date: today,
             startTime: now,
             exercises: workoutExercises,
             totalVolume: 0,
             duration: 0,
           },
+          schedule: updatedSchedule,
         });
       },
 
@@ -232,6 +258,57 @@ export const useWorkoutStore = create<WorkoutState>()(
           programs: state.programs.filter((p) => p.id !== programId),
         }));
       },
+
+      addScheduledWorkout: (date, programId, programName) => {
+        set((state) => ({
+          schedule: {
+            ...state.schedule,
+            [date]: {
+              id: generateId(),
+              date,
+              programId,
+              programName,
+              status: 'planned' as const,
+            },
+          },
+        }));
+      },
+
+      removeScheduledWorkout: (date) => {
+        set((state) => {
+          const next = { ...state.schedule };
+          delete next[date];
+          return { schedule: next };
+        });
+      },
+
+      updateScheduleStatus: (date, status, sessionId) => {
+        set((state) => {
+          const entry = state.schedule[date];
+          if (!entry) return state;
+          return {
+            schedule: {
+              ...state.schedule,
+              [date]: { ...entry, status, ...(sessionId ? { sessionId } : {}) },
+            },
+          };
+        });
+      },
+
+      markMissedWorkouts: () => {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        set((state) => {
+          let changed = false;
+          const next = { ...state.schedule };
+          for (const [date, entry] of Object.entries(next)) {
+            if (date < today && entry.status === 'planned') {
+              next[date] = { ...entry, status: 'missed' };
+              changed = true;
+            }
+          }
+          return changed ? { schedule: next } : state;
+        });
+      },
     }),
     {
       name: 'workout-storage',
@@ -240,6 +317,7 @@ export const useWorkoutStore = create<WorkoutState>()(
         sessions: state.sessions,
         activeWorkout: state.activeWorkout,
         programs: state.programs,
+        schedule: state.schedule,
       }),
     }
   )

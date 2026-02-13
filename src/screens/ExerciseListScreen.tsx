@@ -311,12 +311,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sortRow: {
-    maxHeight: 42,
     marginBottom: 6,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   sortContent: {
     paddingHorizontal: 20,
-    gap: 6,
+    alignItems: 'center',
   },
   sortChip: {
     paddingHorizontal: 12,
@@ -325,6 +326,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 6,
   },
   sortChipActive: {
     backgroundColor: colors.workoutLight,
@@ -339,12 +341,13 @@ const styles = StyleSheet.create({
     color: colors.workout,
   },
   filterRow: {
-    maxHeight: 50,
     marginBottom: 8,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   filterContent: {
     paddingHorizontal: 20,
-    gap: 6,
+    alignItems: 'center',
   },
   filterChip: {
     paddingHorizontal: 14,
@@ -353,6 +356,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 6,
   },
   filterActive: {
     backgroundColor: colors.workout,
@@ -439,7 +443,6 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
   },
   modalChip: {
     paddingHorizontal: 12,
@@ -448,6 +451,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 6,
+    marginBottom: 6,
   },
   modalChipActive: {
     backgroundColor: colors.workout,
