@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
-import { EXERCISES } from '../services/exerciseDatabase';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
+import { getAllExercises } from '../services/exerciseDatabase';
+import { EQUIPMENT_LABELS } from '../utils/constants';
 import { WorkoutStackParamList, Exercise, ProgramExercise, MuscleGroup } from '../models/types';
 import { colors } from '../theme/colors';
 
@@ -38,14 +40,16 @@ interface SelectedExercise extends ProgramExercise {
 export default function CreateProgramScreen() {
   const navigation = useNavigation<Nav>();
   const addProgram = useWorkoutStore((s) => s.addProgram);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [filterGroup, setFilterGroup] = useState<MuscleGroup | 'all'>('all');
 
+  const allExercises = getAllExercises(customExercises);
   const filteredExercises = filterGroup === 'all'
-    ? EXERCISES
-    : EXERCISES.filter((e) => e.muscleGroup === filterGroup);
+    ? allExercises
+    : allExercises.filter((e) => e.muscleGroup === filterGroup);
 
   const handleAddExercise = (exercise: Exercise) => {
     if (selectedExercises.some((e) => e.exerciseId === exercise.id)) return;
@@ -191,7 +195,7 @@ export default function CreateProgramScreen() {
                       {ex.name}
                     </Text>
                     <Text style={styles.pickerItemMeta}>
-                      {MUSCLE_GROUP_LABELS[ex.muscleGroup]} · {ex.equipment}
+                      {MUSCLE_GROUP_LABELS[ex.muscleGroup]} · {EQUIPMENT_LABELS[ex.equipment]}
                     </Text>
                   </View>
                   {isSelected && <Text style={styles.checkMark}>✓</Text>}

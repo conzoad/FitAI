@@ -16,7 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
+
 import { getExerciseById } from '../services/exerciseDatabase';
 import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
@@ -38,6 +40,7 @@ export default function StartWorkoutScreen() {
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
   const [repsInputs, setRepsInputs] = useState<Record<string, string>>({});
   const [showGif, setShowGif] = useState<Record<string, boolean>>({});
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
   const toggleGif = (exerciseId: string) => {
     setShowGif((prev) => ({ ...prev, [exerciseId]: !prev[exerciseId] }));
@@ -141,7 +144,7 @@ export default function StartWorkoutScreen() {
             </View>
           ) : (
             activeWorkout.exercises.map((ex) => {
-              const exerciseData = getExerciseById(ex.exerciseId);
+              const exerciseData = getExerciseById(ex.exerciseId, customExercises);
               const gifUrl = exerciseData?.gifUrl;
 
               return (

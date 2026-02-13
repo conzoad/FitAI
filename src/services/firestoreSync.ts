@@ -5,7 +5,8 @@ import { useDiaryStore } from '../stores/useDiaryStore';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useChatStore } from '../stores/useChatStore';
 import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
-import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage, SavedFoodItem } from '../models/types';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
+import type { UserProfile, DailyEntry, WorkoutSession, WorkoutProgram, ChatMessage, SavedFoodItem, Exercise } from '../models/types';
 
 // ── Debounce helper ──
 
@@ -76,6 +77,16 @@ async function saveFoodLibrary(uid: string, items: Record<string, SavedFoodItem>
     console.log('[Sync] Food library saved OK');
   } catch (e) {
     console.warn('[Sync] saveFoodLibrary error:', e);
+  }
+}
+
+async function saveExercisePrefs(uid: string, data: { favorites: string[]; colorTags: Record<string, string>; customExercises: Exercise[] }): Promise<void> {
+  try {
+    console.log('[Sync] Saving exercise prefs');
+    await setDoc(doc(db, 'users', uid, 'settings', 'exercisePrefs'), data);
+    console.log('[Sync] Exercise prefs saved OK');
+  } catch (e) {
+    console.warn('[Sync] saveExercisePrefs error:', e);
   }
 }
 
@@ -154,6 +165,22 @@ async function loadFoodLibrary(uid: string): Promise<Record<string, SavedFoodIte
   }
 }
 
+async function loadExercisePrefs(uid: string): Promise<{ favorites: string[]; colorTags: Record<string, string>; customExercises: Exercise[] } | null> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'settings', 'exercisePrefs'));
+    if (!snap.exists()) return null;
+    const data = snap.data() as { favorites?: string[]; colorTags?: Record<string, string>; customExercises?: Exercise[] };
+    return {
+      favorites: data.favorites || [],
+      colorTags: data.colorTags || {},
+      customExercises: data.customExercises || [],
+    };
+  } catch (e) {
+    console.warn('[Sync] loadExercisePrefs error:', e);
+    return null;
+  }
+}
+
 // ── Initial load (on login) ──
 
 export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
@@ -204,6 +231,15 @@ export async function loadFromFirestoreIfEmpty(uid: string): Promise<void> {
     const remoteLib = await loadFoodLibrary(uid);
     if (Object.keys(remoteLib).length > 0) {
       useFoodLibraryStore.setState({ items: remoteLib });
+    }
+  }
+
+  // Exercise Prefs
+  const exercisePrefs = useExercisePrefsStore.getState();
+  if (exercisePrefs.favorites.length === 0 && exercisePrefs.customExercises.length === 0 && Object.keys(exercisePrefs.colorTags).length === 0) {
+    const remotePrefs = await loadExercisePrefs(uid);
+    if (remotePrefs) {
+      useExercisePrefsStore.setState(remotePrefs);
     }
   }
 }
@@ -301,6 +337,34 @@ export function startSyncListeners(uid: string): () => void {
       if (newSize !== prevLibSize) {
         prevLibSize = newSize;
         debouncedSaveLibrary(state.items);
+      }
+    })
+  );
+
+  // Exercise Prefs sync (debounce 2s)
+  let prevExPrefsRef = JSON.stringify({
+    favorites: useExercisePrefsStore.getState().favorites,
+    colorTags: useExercisePrefsStore.getState().colorTags,
+    customExercises: useExercisePrefsStore.getState().customExercises,
+  });
+  const debouncedSaveExPrefs = debounce((data: { favorites: string[]; colorTags: Record<string, string>; customExercises: Exercise[] }) => {
+    saveExercisePrefs(uid, data);
+  }, 2000);
+
+  unsubscribers.push(
+    useExercisePrefsStore.subscribe((state) => {
+      const newRef = JSON.stringify({
+        favorites: state.favorites,
+        colorTags: state.colorTags,
+        customExercises: state.customExercises,
+      });
+      if (newRef !== prevExPrefsRef) {
+        prevExPrefsRef = newRef;
+        debouncedSaveExPrefs({
+          favorites: state.favorites,
+          colorTags: state.colorTags,
+          customExercises: state.customExercises,
+        });
       }
     })
   );

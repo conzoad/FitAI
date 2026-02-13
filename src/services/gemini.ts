@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { FOOD_ANALYSIS_TEXT_PROMPT, FOOD_ANALYSIS_PHOTO_PROMPT, FITNESS_CHAT_SYSTEM_PROMPT } from './prompts';
+import { FOOD_ANALYSIS_TEXT_PROMPT, FOOD_ANALYSIS_PHOTO_PROMPT, FITNESS_CHAT_SYSTEM_PROMPT, EXERCISE_PHOTO_ANALYSIS_PROMPT } from './prompts';
 import { parseNutritionResponse } from './responseParser';
-import { GeminiNutritionResponse } from '../models/types';
+import { GeminiNutritionResponse, GeminiExerciseResponse } from '../models/types';
 import Constants from 'expo-constants';
 
 const GEMINI_API_KEY = Constants.expoConfig?.extra?.geminiApiKey || '';
@@ -119,6 +119,51 @@ export async function sendChatMessage(
     });
 
     return response.text ?? 'Извините, не удалось получить ответ.';
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+export async function analyzeExercisePhoto(base64Image: string, mimeType: string = 'image/jpeg'): Promise<GeminiExerciseResponse> {
+  try {
+    const response = await getAI().models.generateContent({
+      model: MODEL_NAME,
+      contents: [
+        {
+          inlineData: {
+            mimeType,
+            data: base64Image,
+          },
+        },
+        {
+          text: EXERCISE_PHOTO_ANALYSIS_PROMPT,
+        },
+      ],
+      config: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const text = response.text ?? '';
+    const cleaned = text.replace(/```json\s*|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      name: parsed.name || 'Неизвестное упражнение',
+      muscleGroup: parsed.muscleGroup || 'fullBody',
+      equipment: parsed.equipment || 'none',
+      category: parsed.category || 'strength',
+      force: parsed.force || 'other',
+      level: parsed.level || 'beginner',
+      description: parsed.description || '',
+      isCompound: parsed.isCompound ?? true,
+      targetMuscles: {
+        primary: parsed.targetMuscles?.primary || [],
+        secondary: parsed.targetMuscles?.secondary || [],
+      },
+      confidence: parsed.confidence || 'medium',
+    };
   } catch (error) {
     handleGeminiError(error);
   }

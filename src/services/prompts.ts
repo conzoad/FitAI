@@ -93,3 +93,36 @@ export const FITNESS_CHAT_SYSTEM_PROMPT = `
 что стоит добавить или убрать. Давай конкретные рекомендации по рациону.
 Будь дружелюбным и мотивирующим.
 `;
+
+export const EXERCISE_PHOTO_ANALYSIS_PROMPT = `
+Ты — профессиональный фитнес-тренер с компьютерным зрением.
+Проанализируй фотографию — на ней может быть тренажёр, оборудование для фитнеса или человек, выполняющий упражнение.
+
+Определи:
+1. Название упражнения (на русском)
+2. Группу мышц (chest, back, shoulders, biceps, triceps, legs, glutes, abs, cardio, fullBody)
+3. Оборудование (none, barbell, dumbbells, dumbbell, kettlebell, machine, cable, band, fitball, pullUpBar, parallelBars, ezBar, treadmill, stationaryBike, jumpRope)
+4. Категорию (strength, cardio, stretching, plyometric, powerlifting, weightlifting)
+5. Тип усилия (push, pull, static, other)
+6. Уровень сложности (beginner, intermediate, advanced)
+7. Описание техники выполнения (на русском, 1-3 предложения)
+8. Является ли базовым (true/false)
+9. Целевые мышцы (primary и secondary из: chest, upperBack, lats, shoulders, frontDelts, sideDelts, rearDelts, biceps, triceps, forearms, abs, obliques, lowerBack, quads, hamstrings, glutes, calves, hip-flexors, cardio)
+
+Ответь СТРОГО в формате JSON без дополнительного текста:
+{
+  "name": "Название упражнения",
+  "muscleGroup": "chest",
+  "equipment": "barbell",
+  "category": "strength",
+  "force": "push",
+  "level": "intermediate",
+  "description": "Описание техники",
+  "isCompound": true,
+  "targetMuscles": {
+    "primary": ["chest"],
+    "secondary": ["frontDelts", "triceps"]
+  },
+  "confidence": "high"
+}
+`;

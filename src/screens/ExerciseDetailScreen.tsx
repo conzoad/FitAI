@@ -3,9 +3,10 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
-import { MUSCLE_GROUP_LABELS } from '../utils/constants';
+import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, EXERCISE_CATEGORY_LABELS, EXERCISE_FORCE_LABELS, EXERCISE_LEVEL_LABELS, COLOR_TAG_PALETTE } from '../utils/constants';
 import { computeExerciseRecords, computeSessionMetrics } from '../utils/calculations';
 import ExerciseProgressCharts from '../components/ExerciseProgressCharts';
 import RecordsCard from '../components/RecordsCard';
@@ -30,7 +31,16 @@ export default function ExerciseDetailScreen() {
   const [gifError, setGifError] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('progress');
 
-  const exercise = useMemo(() => getExerciseById(exerciseId), [exerciseId]);
+  const favorites = useExercisePrefsStore((s) => s.favorites);
+  const colorTags = useExercisePrefsStore((s) => s.colorTags);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
+  const toggleFavorite = useExercisePrefsStore((s) => s.toggleFavorite);
+  const setColorTag = useExercisePrefsStore((s) => s.setColorTag);
+
+  const isFavorite = favorites.includes(exerciseId);
+  const currentColor = colorTags[exerciseId] || null;
+
+  const exercise = useMemo(() => getExerciseById(exerciseId, customExercises), [exerciseId, customExercises]);
 
   const history = useMemo(() => {
     const result: { date: string; sets: { id: string; weight: number; reps: number; isWarmup: boolean }[] }[] = [];
@@ -67,19 +77,52 @@ export default function ExerciseDetailScreen() {
           <Text style={styles.backText}>← Назад</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>{exercise.name}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{exercise.name}</Text>
+          <TouchableOpacity onPress={() => toggleFavorite(exerciseId)} style={styles.favButton}>
+            <Text style={[styles.favStar, isFavorite && styles.favStarActive]}>
+              {isFavorite ? '★' : '☆'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Color picker */}
+        <View style={styles.colorRow}>
+          {COLOR_TAG_PALETTE.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[
+                styles.colorCircle,
+                { backgroundColor: c },
+                currentColor === c && styles.colorCircleActive,
+              ]}
+              onPress={() => setColorTag(exerciseId, currentColor === c ? null : c)}
+            />
+          ))}
+        </View>
+
+        {/* Meta chips */}
         <View style={styles.metaRow}>
           <View style={styles.metaChip}>
             <Text style={styles.metaText}>{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</Text>
           </View>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{exercise.equipment}</Text>
+            <Text style={styles.metaText}>{EQUIPMENT_LABELS[exercise.equipment]}</Text>
           </View>
-          {exercise.isCompound && (
-            <View style={[styles.metaChip, { backgroundColor: colors.workoutLight }]}>
-              <Text style={[styles.metaText, { color: colors.workout }]}>Базовое</Text>
-            </View>
-          )}
+          <View style={[styles.metaChip, { backgroundColor: colors.workoutLight }]}>
+            <Text style={[styles.metaText, { color: colors.workout }]}>
+              {exercise.isCompound ? 'Базовое' : 'Изолирующее'}
+            </Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaText}>{EXERCISE_CATEGORY_LABELS[exercise.category]}</Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaText}>{EXERCISE_FORCE_LABELS[exercise.force]}</Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaText}>{EXERCISE_LEVEL_LABELS[exercise.level]}</Text>
+          </View>
         </View>
 
         {exercise.gifUrl && !gifError && (
@@ -194,11 +237,42 @@ const styles = StyleSheet.create({
     color: colors.workout,
     fontWeight: '600',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 10,
+    flex: 1,
+  },
+  favButton: {
+    padding: 8,
+  },
+  favStar: {
+    fontSize: 28,
+    color: colors.textSecondary,
+  },
+  favStarActive: {
+    color: '#FECA57',
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  colorCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorCircleActive: {
+    borderColor: '#FFFFFF',
+    borderWidth: 3,
   },
   metaRow: {
     flexDirection: 'row',

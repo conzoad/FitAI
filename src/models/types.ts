@@ -143,18 +143,66 @@ export type MuscleId =
   | 'hip-flexors'
   | 'cardio';
 
+export type ExerciseCategory =
+  | 'strength'
+  | 'cardio'
+  | 'stretching'
+  | 'plyometric'
+  | 'powerlifting'
+  | 'weightlifting';
+
+export type Equipment =
+  | 'none'
+  | 'barbell'
+  | 'dumbbells'
+  | 'dumbbell'
+  | 'kettlebell'
+  | 'machine'
+  | 'cable'
+  | 'band'
+  | 'fitball'
+  | 'pullUpBar'
+  | 'parallelBars'
+  | 'ezBar'
+  | 'treadmill'
+  | 'stationaryBike'
+  | 'jumpRope';
+
+export type ExerciseForce = 'push' | 'pull' | 'static' | 'other';
+export type ExerciseLevel = 'beginner' | 'intermediate' | 'advanced';
+
 export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
-  equipment: string;
+  equipment: Equipment;
+  category: ExerciseCategory;
+  force: ExerciseForce;
+  level: ExerciseLevel;
   description: string;
   isCompound: boolean;
+  isCustom?: boolean;
   gifUrl?: string;
   targetMuscles?: {
     primary: MuscleId[];
     secondary: MuscleId[];
   };
+}
+
+export interface GeminiExerciseResponse {
+  name: string;
+  muscleGroup: MuscleGroup;
+  equipment: Equipment;
+  category: ExerciseCategory;
+  force: ExerciseForce;
+  level: ExerciseLevel;
+  description: string;
+  isCompound: boolean;
+  targetMuscles: {
+    primary: MuscleId[];
+    secondary: MuscleId[];
+  };
+  confidence: 'high' | 'medium' | 'low';
 }
 
 export interface WorkoutSet {
@@ -217,6 +265,7 @@ export type WorkoutStackParamList = {
   WorkoutDetail: { sessionId: string; date: string };
   CreateProgram: undefined;
   ProgramDetail: { programId: string };
+  CreateExercise: undefined;
 };
 
 export type AddMealStackParamList = {
