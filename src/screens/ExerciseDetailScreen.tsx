@@ -6,11 +6,20 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
 import { MUSCLE_GROUP_LABELS } from '../utils/constants';
-import WorkoutProgressChart from '../components/WorkoutProgressChart';
+import { computeExerciseRecords, computeSessionMetrics } from '../utils/calculations';
+import ExerciseProgressCharts from '../components/ExerciseProgressCharts';
+import RecordsCard from '../components/RecordsCard';
 import MuscleMapDiagram from '../components/MuscleMapDiagram';
 import { colors } from '../theme/colors';
 
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseDetail'>;
+type TabKey = 'progress' | 'records' | 'history';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'progress', label: 'Прогресс' },
+  { key: 'records', label: 'Рекорды' },
+  { key: 'history', label: 'История' },
+];
 
 export default function ExerciseDetailScreen() {
   const route = useRoute<Route>();
@@ -19,6 +28,7 @@ export default function ExerciseDetailScreen() {
   const sessions = useWorkoutStore((s) => s.sessions);
   const [gifLoading, setGifLoading] = useState(true);
   const [gifError, setGifError] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>('progress');
 
   const exercise = useMemo(() => getExerciseById(exerciseId), [exerciseId]);
 
@@ -39,21 +49,8 @@ export default function ExerciseDetailScreen() {
     return result;
   }, [sessions, exerciseId]);
 
-  const personalRecord = useMemo(() => {
-    let maxWeight = 0;
-    let maxReps = 0;
-    for (const h of history) {
-      for (const s of h.sets) {
-        if (!s.isWarmup) {
-          if (s.weight > maxWeight) {
-            maxWeight = s.weight;
-            maxReps = s.reps;
-          }
-        }
-      }
-    }
-    return maxWeight > 0 ? { weight: maxWeight, reps: maxReps } : null;
-  }, [history]);
+  const records = useMemo(() => computeExerciseRecords(history), [history]);
+  const metrics = useMemo(() => computeSessionMetrics(history), [history]);
 
   if (!exercise) {
     return (
@@ -114,53 +111,63 @@ export default function ExerciseDetailScreen() {
           </>
         )}
 
-        {personalRecord && (
-          <View style={styles.prCard}>
-            <Text style={styles.prIcon}>🏆</Text>
-            <View>
-              <Text style={styles.prTitle}>Личный рекорд</Text>
-              <Text style={styles.prValue}>
-                {personalRecord.weight} кг × {personalRecord.reps} повт.
+        {/* Tab Bar */}
+        <View style={styles.tabBar}>
+          {TABS.map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
               </Text>
-            </View>
-          </View>
-        )}
-
-        <View style={styles.historyHeader}>
-          <Text style={styles.sectionTitle}>История</Text>
-          <Text style={styles.historyCount}>{history.length} тренировок</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {history.length > 0 ? (
-          <>
-            <WorkoutProgressChart history={history} />
+        {/* Tab Content */}
+        {activeTab === 'progress' && (
+          <ExerciseProgressCharts metrics={metrics} />
+        )}
 
-            {history
-              .slice()
-              .reverse()
-              .slice(0, 10)
-              .map((h, idx) => (
-                <View key={idx} style={styles.historyItem}>
-                  <Text style={styles.historyDate}>
-                    {new Date(h.date).toLocaleDateString('ru-RU', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </Text>
-                  <View style={styles.historySets}>
-                    {h.sets
-                      .filter((s) => !s.isWarmup)
-                      .map((s, i) => (
-                        <Text key={i} style={styles.historySet}>
-                          {s.weight}×{s.reps}
-                        </Text>
-                      ))}
+        {activeTab === 'records' && (
+          <RecordsCard records={records} />
+        )}
+
+        {activeTab === 'history' && (
+          <View style={styles.historySection}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyCount}>{history.length} тренировок</Text>
+            </View>
+
+            {history.length > 0 ? (
+              history
+                .slice()
+                .reverse()
+                .map((h, idx) => (
+                  <View key={idx} style={styles.historyItem}>
+                    <Text style={styles.historyDate}>
+                      {new Date(h.date).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </Text>
+                    <View style={styles.historySets}>
+                      {h.sets
+                        .filter((s) => !s.isWarmup)
+                        .map((s, i) => (
+                          <Text key={i} style={styles.historySet}>
+                            {s.weight}×{s.reps}
+                          </Text>
+                        ))}
+                    </View>
                   </View>
-                </View>
-              ))}
-          </>
-        ) : (
-          <Text style={styles.noHistory}>Нет данных. Выполните это упражнение в тренировке!</Text>
+                ))
+            ) : (
+              <Text style={styles.noHistory}>Нет данных. Выполните это упражнение в тренировке!</Text>
+            )}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -238,38 +245,43 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-  prCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-    gap: 12,
-  },
-  prIcon: {
-    fontSize: 28,
-  },
-  prTitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  prValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+    marginBottom: 10,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  tabActive: {
+    backgroundColor: colors.workout,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+  },
+  historySection: {
+    paddingTop: 8,
+  },
+  historyHeader: {
+    marginBottom: 10,
   },
   historyCount: {
     fontSize: 13,

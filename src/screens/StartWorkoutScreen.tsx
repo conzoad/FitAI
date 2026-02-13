@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
+import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
 import { colors } from '../theme/colors';
 
@@ -146,7 +147,22 @@ export default function StartWorkoutScreen() {
               return (
                 <View key={ex.id} style={styles.exerciseBlock}>
                   <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                    <View style={styles.exerciseInfo}>
+                      <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                      {exerciseData?.targetMuscles && (
+                        <Text style={styles.muscleSubtext}>
+                          {exerciseData.targetMuscles.primary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}
+                          {exerciseData.targetMuscles.secondary.length > 0 &&
+                            ` + ${exerciseData.targetMuscles.secondary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}`}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: ex.exerciseId })}
+                      style={styles.detailButton}
+                    >
+                      <Text style={styles.detailIcon}>i</Text>
+                    </TouchableOpacity>
                     {gifUrl && (
                       <TouchableOpacity onPress={() => toggleGif(ex.id)} style={styles.infoButton}>
                         <Text style={styles.infoIcon}>{showGif[ex.id] ? '▲' : '▼'}</Text>
@@ -296,17 +312,38 @@ const styles = StyleSheet.create({
   },
   exerciseHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  exerciseInfo: {
+    flex: 1,
+  },
   exerciseName: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-    flex: 1,
+  },
+  muscleSubtext: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  detailButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.workoutLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  detailIcon: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.workout,
+    fontStyle: 'italic',
   },
   infoButton: {
     paddingHorizontal: 8,

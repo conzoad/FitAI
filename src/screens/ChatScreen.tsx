@@ -15,11 +15,12 @@ import { useProfileStore } from '../stores/useProfileStore';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { sendChatMessage } from '../services/gemini';
-import { GOAL_LABELS, EMPTY_MACROS } from '../utils/constants';
+import { GOAL_LABELS, MEAL_TYPE_LABELS, EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
+import { format, subDays } from 'date-fns';
+import type { DailyEntry, MealType } from '../models/types';
 import ChatMessageComponent from '../components/ChatMessage';
 import { colors } from '../theme/colors';
-import { format, subDays } from 'date-fns';
 
 export default function ChatScreen() {
   const { messages, isLoading, addMessage, setLoading, clearHistory } = useChatStore();
@@ -67,6 +68,33 @@ export default function ChatScreen() {
     return lines.join('\n');
   }, [workoutSessions]);
 
+  const foodContext = useMemo(() => {
+    const days = [
+      { label: 'Сегодня', key: todayKey() },
+      { label: 'Вчера', key: format(subDays(new Date(), 1), 'yyyy-MM-dd') },
+    ];
+    const lines: string[] = [];
+
+    for (const day of days) {
+      const entry: DailyEntry | undefined = entries[day.key];
+      if (!entry || entry.meals.length === 0) {
+        lines.push(`${day.label}: нет данных`);
+        continue;
+      }
+
+      const m = entry.totalMacros;
+      lines.push(`${day.label} (${Math.round(m.calories)} ккал, Б:${Math.round(m.proteins)}г Ж:${Math.round(m.fats)}г У:${Math.round(m.carbs)}г):`);
+
+      for (const meal of entry.meals) {
+        const mealLabel = MEAL_TYPE_LABELS[meal.type as MealType] || meal.type;
+        const itemNames = meal.items.map((i) => `${i.name} ${i.amount}`).join(', ');
+        lines.push(`  ${mealLabel}: ${itemNames}`);
+      }
+    }
+
+    return lines.join('\n');
+  }, [entries]);
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -94,6 +122,7 @@ export default function ChatScreen() {
         TODAY_F: String(Math.round(todayEntry.totalMacros.fats)),
         TODAY_C: String(Math.round(todayEntry.totalMacros.carbs)),
         WORKOUT_CONTEXT: workoutContext,
+        FOOD_CONTEXT: foodContext,
       };
 
       const response = await sendChatMessage(text, chatHistory, userContext);

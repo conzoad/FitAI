@@ -62,3 +62,25 @@ export const MUSCLE_GROUP_ICONS: Record<string, string> = {
   cardio: '🏃',
   fullBody: '⚡',
 };
+
+export const MUSCLE_LABELS: Record<string, string> = {
+  chest: 'Грудь',
+  upperBack: 'Верх спины',
+  lats: 'Широчайшие',
+  shoulders: 'Плечи',
+  frontDelts: 'Передние дельты',
+  sideDelts: 'Средние дельты',
+  rearDelts: 'Задние дельты',
+  biceps: 'Бицепс',
+  triceps: 'Трицепс',
+  forearms: 'Предплечья',
+  abs: 'Пресс',
+  obliques: 'Косые мышцы',
+  lowerBack: 'Поясница',
+  quads: 'Квадрицепсы',
+  hamstrings: 'Бицепс бедра',
+  glutes: 'Ягодицы',
+  calves: 'Икры',
+  'hip-flexors': 'Сгибатели бедра',
+  cardio: 'Сердце (кардио)',
+};
