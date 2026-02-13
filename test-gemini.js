@@ -1,4 +1,9 @@
-const API_KEY = 'AIzaSyAfZpQK1JupIBtazPKgfwqS9QQy-BN8LE0';
+const API_KEY = process.env.GEMINI_API_KEY;
+
+if (!API_KEY) {
+  console.error('❌ Ошибка: API ключ не установлен. Установите переменную окружения GEMINI_API_KEY.');
+  process.exit(1);
+}
 
 async function testGeminiREST() {
   console.log('🔄 Тестирую Gemini API...\n');
