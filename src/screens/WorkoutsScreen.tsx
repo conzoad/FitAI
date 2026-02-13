@@ -188,18 +188,27 @@ export default function WorkoutsScreen() {
             )}
             {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length > 0 && (
               <View>
-                {selectedDayInfo.sessions.map((s) => (
-                  <TouchableOpacity
-                    key={s.id}
-                    style={styles.miniSessionCard}
-                    onPress={() => navigation.navigate('WorkoutDetail', { sessionId: s.id, date: selectedDate })}
-                  >
-                    <Text style={styles.miniSessionText}>
-                      {s.exercises.length} упр. · {s.totalVolume >= 1000 ? `${(s.totalVolume / 1000).toFixed(1)}т` : `${s.totalVolume}кг`} · {s.duration} мин
-                    </Text>
-                    <Text style={styles.miniSessionArrow}>→</Text>
-                  </TouchableOpacity>
-                ))}
+                {selectedDayInfo.sessions.map((s) => {
+                  const exerciseNames = s.exercises.slice(0, 3).map((e) => e.exerciseName).join(', ');
+                  const moreCount = s.exercises.length > 3 ? s.exercises.length - 3 : 0;
+                  return (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={styles.miniSessionCard}
+                      onPress={() => navigation.navigate('WorkoutDetail', { sessionId: s.id, date: selectedDate })}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.miniSessionText}>
+                          {s.exercises.length} упр. · {s.totalVolume >= 1000 ? `${(s.totalVolume / 1000).toFixed(1)}т` : `${s.totalVolume}кг`} · {s.duration} мин
+                        </Text>
+                        <Text style={styles.miniSessionExercises} numberOfLines={1}>
+                          {exerciseNames}{moreCount > 0 ? ` +${moreCount}` : ''}
+                        </Text>
+                      </View>
+                      <Text style={styles.miniSessionArrow}>→</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
             {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length === 0 && (
@@ -254,7 +263,12 @@ export default function WorkoutsScreen() {
               </View>
             ) : (
               programs.map((program) => (
-                <View key={program.id} style={styles.programCard}>
+                <TouchableOpacity
+                  key={program.id}
+                  style={styles.programCard}
+                  onPress={() => navigation.navigate('ProgramDetail', { programId: program.id })}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.programInfo}>
                     <Text style={styles.programName}>{program.name}</Text>
                     <Text style={styles.programMeta}>
@@ -264,17 +278,23 @@ export default function WorkoutsScreen() {
                   <View style={styles.programActions}>
                     <TouchableOpacity
                       style={styles.programStartBtn}
-                      onPress={() => handleStartFromProgram(program.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleStartFromProgram(program.id);
+                      }}
                     >
                       <Text style={styles.programStartText}>Начать</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => handleDeleteProgram(program.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteProgram(program.id);
+                      }}
                     >
                       <Text style={styles.programDeleteBtn}>✕</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>
@@ -583,10 +603,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   miniSessionText: {
-    flex: 1,
     fontSize: 13,
     fontWeight: '500',
     color: colors.text,
+  },
+  miniSessionExercises: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   miniSessionArrow: {
     fontSize: 14,

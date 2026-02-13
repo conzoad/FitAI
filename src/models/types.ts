@@ -236,6 +236,7 @@ export interface WorkoutExercise {
   exerciseName: string;
   sets: WorkoutSet[];
   notes?: string;
+  restSeconds?: number;
 }
 
 export interface WorkoutSession {

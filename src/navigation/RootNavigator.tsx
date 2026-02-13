@@ -27,6 +27,7 @@ import ExerciseDetailScreen from '../screens/ExerciseDetailScreen';
 import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 import CreateProgramScreen from '../screens/CreateProgramScreen';
 import CreateExerciseScreen from '../screens/CreateExerciseScreen';
+import ProgramDetailScreen from '../screens/ProgramDetailScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -63,6 +64,7 @@ function WorkoutStackNavigator() {
       <WorkoutStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
       <WorkoutStack.Screen name="CreateProgram" component={CreateProgramScreen} />
       <WorkoutStack.Screen name="CreateExercise" component={CreateExerciseScreen} />
+      <WorkoutStack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
     </WorkoutStack.Navigator>
   );
 }

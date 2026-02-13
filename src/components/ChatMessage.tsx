@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { ChatMessage as ChatMessageType, ChatAction } from '../models/types';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { colors } from '../theme/colors';
@@ -43,8 +44,10 @@ function renderFormattedText(text: string, isUser: boolean) {
 
 function ActionButton({ action }: { action: ChatAction }) {
   const [applied, setApplied] = useState(false);
+  const [programId, setProgramId] = useState<string | null>(null);
   const addProgram = useWorkoutStore((s) => s.addProgram);
   const addScheduledWorkout = useWorkoutStore((s) => s.addScheduledWorkout);
+  const navigation = useNavigation<any>();
 
   const handlePress = () => {
     if (applied) return;
@@ -56,19 +59,20 @@ function ActionButton({ action }: { action: ChatAction }) {
         targetReps: e.targetReps,
       }));
       addProgram(action.data.name, exercises);
+      const programs = useWorkoutStore.getState().programs;
+      setProgramId(programs[programs.length - 1]?.id || null);
     }
 
     if (action.type === 'scheduleWorkout') {
-      // First ensure the program is added, then schedule
       const exercises = action.data.exercises.map((e) => ({
         exerciseId: e.exerciseId,
         targetSets: e.targetSets,
         targetReps: e.targetReps,
       }));
-      // We need a program ID — add the program and get the latest
       addProgram(action.data.name, exercises);
       const programs = useWorkoutStore.getState().programs;
       const newProgram = programs[programs.length - 1];
+      setProgramId(newProgram?.id || null);
 
       if (newProgram && action.data.scheduleDays) {
         for (const day of action.data.scheduleDays) {
@@ -80,22 +84,42 @@ function ActionButton({ action }: { action: ChatAction }) {
     setApplied(true);
   };
 
+  const handleViewProgram = () => {
+    if (programId) {
+      navigation.navigate('WorkoutTab', {
+        screen: 'ProgramDetail',
+        params: { programId },
+      });
+    }
+  };
+
   const icon = action.type === 'addProgram' ? '\u{1F4CB}' : '\u{1F4C5}';
   const label = action.type === 'addProgram'
     ? `${icon} ${action.label}`
     : `${icon} ${action.label}`;
 
   return (
-    <TouchableOpacity
-      style={[styles.actionBtn, applied && styles.actionBtnApplied]}
-      onPress={handlePress}
-      disabled={applied}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.actionBtnText, applied && styles.actionBtnTextApplied]}>
-        {applied ? `\u2713 ${action.label}` : label}
-      </Text>
-    </TouchableOpacity>
+    <View>
+      <TouchableOpacity
+        style={[styles.actionBtn, applied && styles.actionBtnApplied]}
+        onPress={handlePress}
+        disabled={applied}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.actionBtnText, applied && styles.actionBtnTextApplied]}>
+          {applied ? `\u2713 ${action.label}` : label}
+        </Text>
+      </TouchableOpacity>
+      {applied && programId && (
+        <TouchableOpacity
+          style={styles.viewProgramBtn}
+          onPress={handleViewProgram}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.viewProgramText}>Посмотреть →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -106,7 +130,7 @@ export default function ChatMessage({ message }: Props) {
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
       {!isUser && (
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>🤖</Text>
+          <Text style={styles.avatarText}>{'\u{1F916}'}</Text>
         </View>
       )}
       <View style={styles.contentColumn}>
@@ -216,5 +240,18 @@ const styles = StyleSheet.create({
   },
   actionBtnTextApplied: {
     color: colors.success,
+  },
+  viewProgramBtn: {
+    marginTop: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: colors.workoutLight,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  viewProgramText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.workout,
   },
 });

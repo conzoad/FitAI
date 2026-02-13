@@ -1,20 +1,26 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
+import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
+import { getExerciseById } from '../services/exerciseDatabase';
+import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
 import { colors } from '../theme/colors';
 
 type Route = RouteProp<WorkoutStackParamList, 'WorkoutDetail'>;
+type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'WorkoutDetail'>;
 
 export default function WorkoutDetailScreen() {
   const route = useRoute<Route>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const { sessionId, date } = route.params;
   const sessions = useWorkoutStore((s) => s.sessions);
   const deleteSession = useWorkoutStore((s) => s.deleteSession);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
   const session = useMemo(() => {
     const daySessions = sessions[date] || [];
@@ -91,15 +97,42 @@ export default function WorkoutDetailScreen() {
           </View>
         </View>
 
-        {session.exercises.map((ex) => (
-          <View key={ex.id} style={styles.exerciseBlock}>
-            <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
-            {ex.sets.map((s, idx) => (
-              <SetRow key={s.id} set={s} index={idx + 1} />
-            ))}
-            {ex.notes && <Text style={styles.notes}>{ex.notes}</Text>}
-          </View>
-        ))}
+        {session.exercises.map((ex) => {
+          const exerciseData = getExerciseById(ex.exerciseId, customExercises);
+          const gifUrl = exerciseData?.gifUrl;
+          const muscles = exerciseData?.targetMuscles;
+
+          return (
+            <View key={ex.id} style={styles.exerciseBlock}>
+              <TouchableOpacity
+                style={styles.exerciseHeader}
+                onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: ex.exerciseId })}
+                activeOpacity={0.7}
+              >
+                {gifUrl ? (
+                  <Image source={{ uri: gifUrl }} style={styles.exerciseGif} resizeMode="contain" />
+                ) : (
+                  <View style={[styles.exerciseGif, styles.gifPlaceholder]}>
+                    <Text style={styles.gifPlaceholderText}>🏋️</Text>
+                  </View>
+                )}
+                <View style={styles.exerciseInfo}>
+                  <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                  {muscles && (
+                    <Text style={styles.muscleText}>
+                      {muscles.primary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.exerciseArrow}>→</Text>
+              </TouchableOpacity>
+              {ex.sets.map((s, idx) => (
+                <SetRow key={s.id} set={s} index={idx + 1} />
+              ))}
+              {ex.notes && <Text style={styles.notes}>{ex.notes}</Text>}
+            </View>
+          );
+        })}
 
         {session.notes && (
           <View style={styles.notesBlock}>
@@ -175,13 +208,44 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     overflow: 'hidden',
   },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  exerciseGif: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+  },
+  gifPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gifPlaceholderText: {
+    fontSize: 20,
+  },
+  exerciseInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
   exerciseName: {
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  },
+  muscleText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  exerciseArrow: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginLeft: 8,
   },
   notes: {
     fontSize: 13,

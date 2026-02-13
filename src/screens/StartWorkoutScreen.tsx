@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  ActivityIndicator,
+  Modal,
+  Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +26,9 @@ import SetRow from '../components/SetRow';
 import { colors } from '../theme/colors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'StartWorkout'>;
+
+const REST_OPTIONS = [30, 45, 60, 90, 120, 150, 180];
+const DEFAULT_REST = 90;
 
 export default function StartWorkoutScreen() {
   const navigation = useNavigation<Nav>();
@@ -42,6 +46,13 @@ export default function StartWorkoutScreen() {
   const [showGif, setShowGif] = useState<Record<string, boolean>>({});
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
+  // Timer states
+  const [exerciseStartTimes, setExerciseStartTimes] = useState<Record<string, number>>({});
+  const [exerciseElapsed, setExerciseElapsed] = useState<Record<string, number>>({});
+  const [restTimers, setRestTimers] = useState<Record<string, { remaining: number; total: number }>>({});
+  const [restDurations, setRestDurations] = useState<Record<string, number>>({});
+  const [restModalExerciseId, setRestModalExerciseId] = useState<string | null>(null);
+
   const toggleGif = (exerciseId: string) => {
     setShowGif((prev) => ({ ...prev, [exerciseId]: !prev[exerciseId] }));
   };
@@ -52,14 +63,61 @@ export default function StartWorkoutScreen() {
     }
   }, []);
 
+  // Initialize exercise start times when exercises appear
+  useEffect(() => {
+    if (!activeWorkout) return;
+    const now = Date.now();
+    setExerciseStartTimes((prev) => {
+      const next = { ...prev };
+      for (const ex of activeWorkout.exercises) {
+        if (!next[ex.id]) {
+          next[ex.id] = now;
+        }
+      }
+      return next;
+    });
+  }, [activeWorkout?.exercises.length]);
+
+  // Unified timer interval: total workout + per-exercise elapsed + rest countdowns
   useEffect(() => {
     const interval = setInterval(() => {
+      const now = Date.now();
+
+      // Update total workout timer
       if (activeWorkout) {
-        setTimer(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
+        setTimer(Math.floor((now - activeWorkout.startTime) / 1000));
       }
+
+      // Update exercise elapsed times
+      setExerciseElapsed((prev) => {
+        const next: Record<string, number> = {};
+        for (const [id, start] of Object.entries(exerciseStartTimes)) {
+          next[id] = Math.floor((now - start) / 1000);
+        }
+        return next;
+      });
+
+      // Update rest countdowns
+      setRestTimers((prev) => {
+        let changed = false;
+        const next: Record<string, { remaining: number; total: number }> = {};
+        for (const [id, rt] of Object.entries(prev)) {
+          if (rt.remaining > 0) {
+            next[id] = { ...rt, remaining: rt.remaining - 1 };
+            changed = true;
+            if (rt.remaining === 1) {
+              // Timer just hit zero — vibrate
+              Vibration.vibrate(500);
+            }
+          } else {
+            next[id] = rt;
+          }
+        }
+        return changed ? next : prev;
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeWorkout?.startTime]);
+  }, [activeWorkout?.startTime, exerciseStartTimes]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -75,6 +133,21 @@ export default function StartWorkoutScreen() {
       return;
     }
     addSet(exerciseId, weight, reps, false);
+
+    // Start rest countdown for this exercise
+    const restSec = restDurations[exerciseId] || DEFAULT_REST;
+    setRestTimers((prev) => ({
+      ...prev,
+      [exerciseId]: { remaining: restSec, total: restSec },
+    }));
+  };
+
+  const handleSkipRest = (exerciseId: string) => {
+    setRestTimers((prev) => {
+      const next = { ...prev };
+      delete next[exerciseId];
+      return next;
+    });
   };
 
   const handleFinish = () => {
@@ -113,6 +186,12 @@ export default function StartWorkoutScreen() {
     ]);
   };
 
+  const getRestProgress = (exerciseId: string): number => {
+    const rt = restTimers[exerciseId];
+    if (!rt || rt.total === 0) return 0;
+    return rt.remaining / rt.total;
+  };
+
   if (!activeWorkout) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -146,19 +225,24 @@ export default function StartWorkoutScreen() {
             activeWorkout.exercises.map((ex) => {
               const exerciseData = getExerciseById(ex.exerciseId, customExercises);
               const gifUrl = exerciseData?.gifUrl;
+              const restTimer = restTimers[ex.id];
+              const isResting = restTimer && restTimer.remaining > 0;
+              const elapsed = exerciseElapsed[ex.id] || 0;
+              const currentRestDuration = restDurations[ex.id] || DEFAULT_REST;
 
               return (
                 <View key={ex.id} style={styles.exerciseBlock}>
                   <View style={styles.exerciseHeader}>
                     <View style={styles.exerciseInfo}>
                       <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
-                      {exerciseData?.targetMuscles && (
-                        <Text style={styles.muscleSubtext}>
-                          {exerciseData.targetMuscles.primary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}
-                          {exerciseData.targetMuscles.secondary.length > 0 &&
-                            ` + ${exerciseData.targetMuscles.secondary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}`}
-                        </Text>
-                      )}
+                      <View style={styles.exerciseMetaRow}>
+                        {exerciseData?.targetMuscles && (
+                          <Text style={styles.muscleSubtext}>
+                            {exerciseData.targetMuscles.primary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}
+                          </Text>
+                        )}
+                        <Text style={styles.exerciseTimer}>{formatTime(elapsed)}</Text>
+                      </View>
                     </View>
                     <TouchableOpacity
                       onPress={() => navigation.navigate('ExerciseDetail', { exerciseId: ex.exerciseId })}
@@ -171,6 +255,9 @@ export default function StartWorkoutScreen() {
                         <Text style={styles.infoIcon}>{showGif[ex.id] ? '▲' : '▼'}</Text>
                       </TouchableOpacity>
                     )}
+                    <TouchableOpacity onPress={() => setRestModalExerciseId(ex.id)} style={styles.settingsButton}>
+                      <Text style={styles.settingsIcon}>⚙</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeExercise(ex.id)}>
                       <Text style={styles.removeExercise}>✕</Text>
                     </TouchableOpacity>
@@ -205,10 +292,32 @@ export default function StartWorkoutScreen() {
                     </View>
                   )}
 
+                  {/* Rest countdown */}
+                  {isResting && (
+                    <View style={styles.restBar}>
+                      <View style={styles.restBarContent}>
+                        <Text style={styles.restLabel}>Отдых</Text>
+                        <Text style={styles.restCountdown}>{formatTime(restTimer.remaining)}</Text>
+                        <TouchableOpacity onPress={() => handleSkipRest(ex.id)} style={styles.skipRestButton}>
+                          <Text style={styles.skipRestText}>Пропустить</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.restProgressBg}>
+                        <View
+                          style={[
+                            styles.restProgressFill,
+                            { width: `${getRestProgress(ex.id) * 100}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  )}
+
                   <View style={styles.addSetRow}>
                     <TextInput
                       style={styles.input}
                       placeholder="Вес"
+                      placeholderTextColor={colors.textMuted}
                       keyboardType="decimal-pad"
                       value={weightInputs[ex.id] || ''}
                       onChangeText={(t) =>
@@ -219,6 +328,7 @@ export default function StartWorkoutScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="Повт."
+                      placeholderTextColor={colors.textMuted}
                       keyboardType="number-pad"
                       value={repsInputs[ex.id] || ''}
                       onChangeText={(t) =>
@@ -231,6 +341,13 @@ export default function StartWorkoutScreen() {
                     >
                       <Text style={styles.addSetText}>+ Подход</Text>
                     </TouchableOpacity>
+                  </View>
+
+                  {/* Rest duration badge */}
+                  <View style={styles.restDurationInfo}>
+                    <Text style={styles.restDurationText}>
+                      Отдых: {currentRestDuration}с
+                    </Text>
                   </View>
                 </View>
               );
@@ -245,6 +362,51 @@ export default function StartWorkoutScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Rest duration settings modal */}
+      <Modal
+        visible={restModalExerciseId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRestModalExerciseId(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setRestModalExerciseId(null)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Время отдыха</Text>
+            {REST_OPTIONS.map((sec) => {
+              const isSelected = restModalExerciseId
+                ? (restDurations[restModalExerciseId] || DEFAULT_REST) === sec
+                : false;
+              return (
+                <TouchableOpacity
+                  key={sec}
+                  style={[styles.modalOption, isSelected && styles.modalOptionSelected]}
+                  onPress={() => {
+                    if (restModalExerciseId) {
+                      setRestDurations((prev) => ({ ...prev, [restModalExerciseId]: sec }));
+                    }
+                    setRestModalExerciseId(null);
+                  }}
+                >
+                  <Text style={[styles.modalOptionText, isSelected && styles.modalOptionTextSelected]}>
+                    {sec >= 60 ? `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}` : `0:${sec.toString().padStart(2, '0')}`}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setRestModalExerciseId(null)}
+            >
+              <Text style={styles.modalCancelText}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -328,10 +490,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  exerciseMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 8,
+  },
   muscleSubtext: {
     fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 2,
+  },
+  exerciseTimer: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.workout,
+    fontVariant: ['tabular-nums'],
   },
   detailButton: {
     width: 26,
@@ -355,6 +528,14 @@ const styles = StyleSheet.create({
   infoIcon: {
     fontSize: 14,
     color: colors.workout,
+  },
+  settingsButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  settingsIcon: {
+    fontSize: 16,
+    color: colors.textSecondary,
   },
   removeExercise: {
     fontSize: 18,
@@ -389,6 +570,60 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
   },
+  // Rest timer
+  restBar: {
+    backgroundColor: 'rgba(162, 155, 254, 0.08)',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  restBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  restLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  restCountdown: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.workout,
+    fontVariant: ['tabular-nums'],
+    flex: 1,
+  },
+  skipRestButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.workoutLight,
+    borderRadius: 8,
+  },
+  skipRestText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.workout,
+  },
+  restProgressBg: {
+    height: 3,
+    backgroundColor: colors.border,
+  },
+  restProgressFill: {
+    height: 3,
+    backgroundColor: colors.workout,
+  },
+  restDurationInfo: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  restDurationText: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
   addSetRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -404,6 +639,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
+    color: colors.text,
     textAlign: 'center',
     borderWidth: 1,
     borderColor: colors.border,
@@ -436,5 +672,57 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.workout,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    width: 260,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  modalOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 4,
+    alignItems: 'center',
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.workoutLight,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
+  modalOptionTextSelected: {
+    color: colors.workout,
+    fontWeight: '700',
+  },
+  modalCancel: {
+    marginTop: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '600',
   },
 });
