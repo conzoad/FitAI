@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { WorkoutSet } from '../models/types';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface WorkoutProgressChartProps {
   history: { date: string; sets: WorkoutSet[] }[];
@@ -12,6 +13,9 @@ interface WorkoutProgressChartProps {
 const screenWidth = Dimensions.get('window').width - 40;
 
 export default function WorkoutProgressChart({ history, title = 'Прогресс' }: WorkoutProgressChartProps) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   if (history.length < 2) {
     return (
       <View style={styles.container}>
@@ -103,25 +107,27 @@ export default function WorkoutProgressChart({ history, title = 'Прогрес�
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  chart: {
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  noData: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 30,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      marginTop: 8,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+      marginBottom: 8,
+      marginTop: 8,
+    },
+    chart: {
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    noData: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 30,
+    },
+  });
+}

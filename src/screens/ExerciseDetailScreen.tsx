@@ -11,7 +11,8 @@ import { computeExerciseRecords, computeSessionMetrics } from '../utils/calculat
 import ExerciseProgressCharts from '../components/ExerciseProgressCharts';
 import RecordsCard from '../components/RecordsCard';
 import MuscleMapDiagram from '../components/MuscleMapDiagram';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseDetail'>;
 type TabKey = 'progress' | 'records' | 'history';
@@ -39,6 +40,9 @@ export default function ExerciseDetailScreen() {
 
   const isFavorite = favorites.includes(exerciseId);
   const currentColor = colorTags[exerciseId] || null;
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const exercise = useMemo(() => getExerciseById(exerciseId, customExercises), [exerciseId, customExercises]);
 
@@ -217,189 +221,191 @@ export default function ExerciseDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-  },
-  favButton: {
-    padding: 8,
-  },
-  favStar: {
-    fontSize: 28,
-    color: colors.textSecondary,
-  },
-  favStarActive: {
-    color: '#FECA57',
-  },
-  colorRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  colorCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  colorCircleActive: {
-    borderColor: '#FFFFFF',
-    borderWidth: 3,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-    flexWrap: 'wrap',
-  },
-  metaChip: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  metaText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  gifContainer: {
-    width: '100%',
-    height: 250,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  gifLoading: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  gifImage: {
-    width: '100%',
-    height: '100%',
-  },
-  description: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 10,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  tabActive: {
-    backgroundColor: colors.workout,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-  },
-  historySection: {
-    paddingTop: 8,
-  },
-  historyHeader: {
-    marginBottom: 10,
-  },
-  historyCount: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 6,
-  },
-  historyDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    width: 60,
-  },
-  historySets: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  historySet: {
-    fontSize: 13,
-    color: colors.workout,
-    fontWeight: '600',
-    backgroundColor: colors.workoutLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  noHistory: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 30,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 12,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+      flex: 1,
+    },
+    favButton: {
+      padding: 8,
+    },
+    favStar: {
+      fontSize: 28,
+      color: c.textSecondary,
+    },
+    favStarActive: {
+      color: '#FECA57',
+    },
+    colorRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 14,
+    },
+    colorCircle: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    colorCircleActive: {
+      borderColor: '#FFFFFF',
+      borderWidth: 3,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 14,
+      flexWrap: 'wrap',
+    },
+    metaChip: {
+      backgroundColor: c.surface,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    metaText: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    gifContainer: {
+      width: '100%',
+      height: 250,
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      marginBottom: 14,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    gifLoading: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+    },
+    gifImage: {
+      width: '100%',
+      height: '100%',
+    },
+    description: {
+      fontSize: 15,
+      color: c.text,
+      lineHeight: 22,
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: c.text,
+      marginBottom: 10,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 4,
+      marginBottom: 4,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: 10,
+    },
+    tabActive: {
+      backgroundColor: c.workout,
+    },
+    tabText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    tabTextActive: {
+      color: '#FFFFFF',
+    },
+    historySection: {
+      paddingTop: 8,
+    },
+    historyHeader: {
+      marginBottom: 10,
+    },
+    historyCount: {
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    historyItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 6,
+    },
+    historyDate: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+      width: 60,
+    },
+    historySets: {
+      flex: 1,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    historySet: {
+      fontSize: 13,
+      color: c.workout,
+      fontWeight: '600',
+      backgroundColor: c.workoutLight,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    noHistory: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 30,
+    },
+    errorText: {
+      fontSize: 16,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,8 @@ import {
   EXERCISE_LEVEL_LABELS,
 } from '../utils/constants';
 import { getAllMuscleGroups } from '../services/exerciseDatabase';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateExercise'>;
 
@@ -53,6 +54,9 @@ export default function CreateExerciseScreen() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const pickImage = async (source: 'camera' | 'gallery') => {
     let result: ImagePicker.ImagePickerResult;
@@ -279,164 +283,166 @@ export default function CreateExerciseScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 8,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 16,
+    },
 
-  // Photo Section
-  photoSection: {
-    marginBottom: 8,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    marginBottom: 10,
-  },
-  photoPlaceholder: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  photoPlaceholderText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  photoButton: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  photoButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  aiButton: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  aiButtonText: {
-    color: '#FFFFFF',
-  },
+    // Photo Section
+    photoSection: {
+      marginBottom: 8,
+    },
+    photoPreview: {
+      width: '100%',
+      height: 200,
+      borderRadius: 12,
+      backgroundColor: c.surface,
+      marginBottom: 10,
+    },
+    photoPlaceholder: {
+      width: '100%',
+      height: 200,
+      borderRadius: 12,
+      backgroundColor: c.surface,
+      borderWidth: 2,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    photoPlaceholderText: {
+      fontSize: 15,
+      color: c.textSecondary,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    photoButton: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    photoButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.text,
+    },
+    aiButton: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    aiButtonText: {
+      color: '#FFFFFF',
+    },
 
-  // Form
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  textArea: {
-    minHeight: 100,
-  },
+    // Form
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 14,
+      fontSize: 16,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    textArea: {
+      minHeight: 100,
+    },
 
-  // Chips
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipSelected: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  chipTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
+    // Chips
+    chipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipSelected: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    chipText: {
+      fontSize: 13,
+      color: c.textSecondary,
+    },
+    chipTextSelected: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
 
-  // Toggle
-  toggleButton: {
-    backgroundColor: colors.workoutLight,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.workout,
-  },
-  toggleText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.workout,
-  },
+    // Toggle
+    toggleButton: {
+      backgroundColor: c.workoutLight,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.workout,
+    },
+    toggleText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.workout,
+    },
 
-  // Save
-  saveButton: {
-    backgroundColor: colors.workout,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-});
+    // Save
+    saveButton: {
+      backgroundColor: c.workout,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    saveButtonDisabled: {
+      opacity: 0.5,
+    },
+    saveText: {
+      color: '#FFFFFF',
+      fontSize: 17,
+      fontWeight: '700',
+    },
+  });
+}

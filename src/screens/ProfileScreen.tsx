@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,15 +13,22 @@ import { useProfileStore } from '../stores/useProfileStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { Goal, ActivityLevel, Gender } from '../models/types';
 import { GOAL_LABELS, ACTIVITY_LABELS, GENDER_LABELS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
+import { useThemeStore, ThemeMode } from '../stores/useThemeStore';
 
 interface Props {
   isOnboarding?: boolean;
 }
 
 export default function ProfileScreen({ isOnboarding = false }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const { profile, setProfile, calculateTargets, resetProfile } = useProfileStore();
   const { user, logout } = useAuthStore();
+  const currentTheme = useThemeStore((s) => s.theme);
+  const setTheme = useThemeStore((s) => s.setTheme);
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(String(profile.age));
   const [height, setHeight] = useState(String(profile.heightCm));
@@ -51,6 +58,11 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const goals: Goal[] = ['loss', 'maintenance', 'gain'];
   const activities: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
   const genders: Gender[] = ['male', 'female'];
+  const themes: { key: ThemeMode; label: string }[] = [
+    { key: 'dark', label: 'Тёмная' },
+    { key: 'light', label: 'Светлая' },
+    { key: 'system', label: 'Системная' },
+  ];
 
   const handleLogout = () => {
     Alert.alert('Выйти из аккаунта?', 'Данные профиля будут сброшены', [
@@ -174,6 +186,25 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
           </TouchableOpacity>
         ))}
 
+        {!isOnboarding && (
+          <>
+            <Text style={styles.label}>ТЕМА</Text>
+            <View style={styles.row}>
+              {themes.map((t) => (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.chip, currentTheme === t.key && styles.chipActive]}
+                  onPress={() => setTheme(t.key)}
+                >
+                  <Text style={[styles.chipText, currentTheme === t.key && styles.chipTextActive]}>
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveText}>
             {isOnboarding ? 'Начать' : 'Сохранить'}
@@ -226,227 +257,229 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 3,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.primary,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginTop: 18,
-    marginBottom: 8,
-    letterSpacing: 1.2,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  rowInputs: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  chipText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  activityItem: {
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 6,
-  },
-  activityActive: {
-    backgroundColor: 'rgba(108, 92, 231, 0.12)',
-    borderColor: colors.primary,
-  },
-  activityText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  activityTextActive: {
-    color: colors.primaryLight,
-    fontWeight: '700',
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 17,
-    alignItems: 'center',
-    marginTop: 28,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  saveText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  targetsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 18,
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  targetsTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 14,
-  },
-  targetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  targetItem: {
-    alignItems: 'center',
-  },
-  targetValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  targetLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  accountSection: {
-    marginTop: 28,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 10,
-  },
-  accountCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  accountEmail: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  providerBadge: {
-    backgroundColor: colors.surfaceLight,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  providerText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  logoutButton: {
-    marginTop: 12,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.2)',
-  },
-  logoutText: {
-    color: colors.error,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    avatarSection: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    avatarCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: c.surfaceLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+      borderWidth: 3,
+      borderColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    avatarText: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: c.primary,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: c.text,
+      marginBottom: 4,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: c.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.textMuted,
+      marginTop: 18,
+      marginBottom: 8,
+      letterSpacing: 1.2,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      fontSize: 16,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    rowInputs: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    inputGroup: {
+      flex: 1,
+    },
+    chip: {
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+      borderRadius: 20,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    chipText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    chipTextActive: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+    activityItem: {
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 6,
+    },
+    activityActive: {
+      backgroundColor: 'rgba(108, 92, 231, 0.12)',
+      borderColor: c.primary,
+    },
+    activityText: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    activityTextActive: {
+      color: c.primaryLight,
+      fontWeight: '700',
+    },
+    saveButton: {
+      backgroundColor: c.primary,
+      borderRadius: 14,
+      padding: 17,
+      alignItems: 'center',
+      marginTop: 28,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    saveText: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    targetsCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 18,
+      marginTop: 24,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    targetsTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 14,
+    },
+    targetRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    targetItem: {
+      alignItems: 'center',
+    },
+    targetValue: {
+      fontSize: 20,
+      fontWeight: '800',
+    },
+    targetLabel: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    accountSection: {
+      marginTop: 28,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 10,
+    },
+    accountCard: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    accountEmail: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+      flex: 1,
+    },
+    providerBadge: {
+      backgroundColor: c.surfaceLight,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    providerText: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '600',
+    },
+    logoutButton: {
+      marginTop: 12,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: 'rgba(255, 107, 107, 0.1)',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 107, 107, 0.2)',
+    },
+    logoutText: {
+      color: c.error,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
+}

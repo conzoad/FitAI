@@ -7,7 +7,7 @@
     "projectId": "42a98aa9-d950-4993-8527-51078ee7f874",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -20,7 +20,8 @@
         "backgroundColor": "#4CAF50"
       },
       "permissions": [
-        "CAMERA"
+        "CAMERA",
+        "POST_NOTIFICATIONS"
       ],
       "package": "com.kbzhutracker.app",
       "edgeToEdgeEnabled": true
@@ -39,7 +40,8 @@
           "cameraPermission": "Приложению нужен доступ к камере для сканирования штрихкодов"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

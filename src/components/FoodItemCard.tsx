@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface FoodItemData {
   name: string;
@@ -18,6 +19,9 @@ interface Props {
 }
 
 export default function FoodItemCard({ item, editable = false, onUpdate }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -61,54 +65,56 @@ export default function FoodItemCard({ item, editable = false, onUpdate }: Props
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  name: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  amount: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  amountInput: {
-    fontSize: 14,
-    color: colors.text,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.primary,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    minWidth: 80,
-    textAlign: 'right',
-  },
-  macros: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  macroPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  macroItem: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surfaceLight,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    name: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+      flex: 1,
+    },
+    amount: {
+      fontSize: 14,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    amountInput: {
+      fontSize: 14,
+      color: c.text,
+      borderBottomWidth: 1,
+      borderBottomColor: c.primary,
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      minWidth: 80,
+      textAlign: 'right',
+    },
+    macros: {
+      flexDirection: 'row',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    macroPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    macroItem: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+  });
+}

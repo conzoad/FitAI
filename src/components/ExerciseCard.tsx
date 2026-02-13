@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { Exercise } from '../models/types';
 import { MUSCLE_GROUP_LABELS, MUSCLE_GROUP_ICONS, EQUIPMENT_LABELS, EXERCISE_LEVEL_LABELS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -12,6 +13,8 @@ interface ExerciseCardProps {
 }
 
 export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }: ExerciseCardProps) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [gifLoading, setGifLoading] = useState(true);
   const [gifError, setGifError] = useState(false);
 
@@ -64,96 +67,98 @@ export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.workoutLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    overflow: 'hidden',
-  },
-  gifLoading: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  thumbnailGif: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  icon: {
-    fontSize: 20,
-  },
-  info: {
-    flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  star: {
-    fontSize: 14,
-    color: '#FECA57',
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  meta: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  badges: {
-    alignItems: 'flex-end',
-    gap: 4,
-    marginLeft: 8,
-  },
-  badge: {
-    backgroundColor: colors.workoutLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 11,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  levelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  level_beginner: {
-    backgroundColor: 'rgba(85, 239, 196, 0.15)',
-  },
-  level_intermediate: {
-    backgroundColor: 'rgba(254, 202, 87, 0.15)',
-  },
-  level_advanced: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-  },
-  levelText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-} as Record<string, any>);
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    iconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: c.workoutLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+      overflow: 'hidden',
+    },
+    gifLoading: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    thumbnailGif: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    icon: {
+      fontSize: 20,
+    },
+    info: {
+      flex: 1,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    star: {
+      fontSize: 14,
+      color: '#FECA57',
+    },
+    name: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+      flex: 1,
+    },
+    meta: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    badges: {
+      alignItems: 'flex-end',
+      gap: 4,
+      marginLeft: 8,
+    },
+    badge: {
+      backgroundColor: c.workoutLight,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    badgeText: {
+      fontSize: 11,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    levelBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    level_beginner: {
+      backgroundColor: 'rgba(85, 239, 196, 0.15)',
+    },
+    level_intermediate: {
+      backgroundColor: 'rgba(254, 202, 87, 0.15)',
+    },
+    level_advanced: {
+      backgroundColor: 'rgba(255, 107, 107, 0.15)',
+    },
+    levelText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+  } as Record<string, any>);
+}

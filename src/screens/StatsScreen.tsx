@@ -16,7 +16,8 @@ import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { useProfileStore } from '../stores/useProfileStore';
 import { formatDayShort, getDaysArray, dateKey } from '../utils/dateHelpers';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 import { EMPTY_MACROS } from '../utils/constants';
 
 const screenWidth = Dimensions.get('window').width - 40;
@@ -32,6 +33,9 @@ export default function StatsScreen() {
   const [macroTab, setMacroTab] = useState<MacroTab>('proteins');
   const [weightModalVisible, setWeightModalVisible] = useState(false);
   const [weightInput, setWeightInput] = useState('');
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const days = useMemo(() => getDaysArray(period === 'week' ? 7 : 30), [period]);
 
@@ -380,224 +384,226 @@ export default function StatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  periodRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: 16,
-  },
-  periodTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  periodActive: {
-    backgroundColor: colors.primary,
-  },
-  periodText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  periodTextActive: {
-    color: '#FFFFFF',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 10,
-    marginTop: 8,
-  },
-  chart: {
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  noData: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 40,
-  },
-  // Macro tabs
-  macroTabRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: 12,
-  },
-  macroTab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  macroTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  macroTabTextActive: {
-    color: '#FFFFFF',
-  },
-  macroSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    marginBottom: 8,
-  },
-  macroAvg: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  macroTarget: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  // Weight
-  weightHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addWeightButton: {
-    backgroundColor: colors.workout,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  addWeightText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  noWeightData: {
-    alignItems: 'center',
-  },
-  currentWeight: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.workout,
-    marginTop: 4,
-  },
-  weightStatsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    width: '85%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  modalInput: {
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 18,
-    color: colors.text,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 20,
-  },
-  modalCancel: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalCancelText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  modalSave: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: colors.workout,
-  },
-  modalSaveText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 8,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 16,
+    },
+    periodRow: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 3,
+      marginBottom: 16,
+    },
+    periodTab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    periodActive: {
+      backgroundColor: c.primary,
+    },
+    periodText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    periodTextActive: {
+      color: '#FFFFFF',
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 20,
+    },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+    },
+    summaryValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.primary,
+    },
+    summaryLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    chartTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: c.text,
+      marginBottom: 10,
+      marginTop: 8,
+    },
+    chart: {
+      borderRadius: 12,
+      marginBottom: 16,
+    },
+    noData: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 40,
+    },
+    // Macro tabs
+    macroTabRow: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 3,
+      marginBottom: 12,
+    },
+    macroTab: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    macroTabText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    macroTabTextActive: {
+      color: '#FFFFFF',
+    },
+    macroSummaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 4,
+      marginBottom: 8,
+    },
+    macroAvg: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    macroTarget: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    // Weight
+    weightHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    addWeightButton: {
+      backgroundColor: c.workout,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    addWeightText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    noWeightData: {
+      alignItems: 'center',
+    },
+    currentWeight: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.workout,
+      marginTop: 4,
+    },
+    weightStatsRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    // Modal
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 24,
+      width: '85%',
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 16,
+      textAlign: 'center',
+    },
+    modalInput: {
+      backgroundColor: c.background,
+      borderRadius: 10,
+      padding: 14,
+      fontSize: 18,
+      color: c.text,
+      textAlign: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 20,
+    },
+    modalCancel: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 10,
+      alignItems: 'center',
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modalCancelText: {
+      fontSize: 16,
+      color: c.textSecondary,
+      fontWeight: '600',
+    },
+    modalSave: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 10,
+      alignItems: 'center',
+      backgroundColor: c.workout,
+    },
+    modalSaveText: {
+      fontSize: 16,
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+  });
+}

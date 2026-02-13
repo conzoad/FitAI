@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,8 @@ import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { getAllExercises } from '../services/exerciseDatabase';
 import { EQUIPMENT_LABELS } from '../utils/constants';
 import { WorkoutStackParamList, Exercise, ProgramExercise, MuscleGroup } from '../models/types';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateProgram'>;
 
@@ -45,6 +46,8 @@ export default function CreateProgramScreen() {
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [filterGroup, setFilterGroup] = useState<MuscleGroup | 'all'>('all');
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const allExercises = getAllExercises(customExercises);
   const filteredExercises = filterGroup === 'all'
@@ -221,205 +224,207 @@ export default function CreateProgramScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exerciseItem: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  exerciseInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  exerciseNumber: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.workout,
-    width: 24,
-  },
-  exerciseName: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  removeBtn: {
-    fontSize: 16,
-    color: colors.error,
-    paddingHorizontal: 6,
-  },
-  setsRepsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingLeft: 24,
-    gap: 8,
-  },
-  setsRepsGroup: {
-    flex: 1,
-  },
-  setsRepsLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  setsRepsInput: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 8,
-    fontSize: 15,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    color: colors.text,
-  },
-  separator: {
-    fontSize: 18,
-    color: colors.textSecondary,
-    marginTop: 16,
-  },
-  addExerciseButton: {
-    borderWidth: 2,
-    borderColor: colors.workout,
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addExerciseText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.workout,
-  },
-  pickerContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: colors.workout,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.background,
-    marginRight: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  filterChipText: {
-    fontSize: 13,
-    color: colors.text,
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  pickerItemSelected: {
-    opacity: 0.5,
-  },
-  pickerItemName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  pickerItemNameSelected: {
-    color: colors.textSecondary,
-  },
-  pickerItemMeta: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  checkMark: {
-    fontSize: 18,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  closePicker: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  closePickerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.workout,
-  },
-  saveButton: {
-    backgroundColor: colors.workout,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 8,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 14,
+      fontSize: 16,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    exerciseItem: {
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    exerciseInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    exerciseNumber: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.workout,
+      width: 24,
+    },
+    exerciseName: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+    },
+    removeBtn: {
+      fontSize: 16,
+      color: c.error,
+      paddingHorizontal: 6,
+    },
+    setsRepsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+      paddingLeft: 24,
+      gap: 8,
+    },
+    setsRepsGroup: {
+      flex: 1,
+    },
+    setsRepsLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginBottom: 4,
+    },
+    setsRepsInput: {
+      backgroundColor: c.background,
+      borderRadius: 8,
+      padding: 8,
+      fontSize: 15,
+      textAlign: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+      color: c.text,
+    },
+    separator: {
+      fontSize: 18,
+      color: c.textSecondary,
+      marginTop: 16,
+    },
+    addExerciseButton: {
+      borderWidth: 2,
+      borderColor: c.workout,
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    addExerciseText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    pickerContainer: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: c.workout,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      marginBottom: 10,
+    },
+    filterChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: c.background,
+      marginRight: 6,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    filterChipActive: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    filterChipText: {
+      fontSize: 13,
+      color: c.text,
+    },
+    filterChipTextActive: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    pickerItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    pickerItemSelected: {
+      opacity: 0.5,
+    },
+    pickerItemName: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+    },
+    pickerItemNameSelected: {
+      color: c.textSecondary,
+    },
+    pickerItemMeta: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    checkMark: {
+      fontSize: 18,
+      color: c.primary,
+      fontWeight: '700',
+    },
+    closePicker: {
+      paddingVertical: 10,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    closePickerText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.workout,
+    },
+    saveButton: {
+      backgroundColor: c.workout,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    saveText: {
+      color: '#FFFFFF',
+      fontSize: 17,
+      fontWeight: '700',
+    },
+  });
+}

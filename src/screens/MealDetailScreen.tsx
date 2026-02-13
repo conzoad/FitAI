@@ -6,7 +6,8 @@ import { useDiaryStore } from '../stores/useDiaryStore';
 import { DiaryStackParamList, FoodItem, Macros } from '../models/types';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import FoodItemCard from '../components/FoodItemCard';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Route = RouteProp<DiaryStackParamList, 'MealDetail'>;
 
@@ -23,6 +24,8 @@ export default function MealDetailScreen() {
   const removeMeal = useDiaryStore((s) => s.removeMeal);
   const updateMealItem = useDiaryStore((s) => s.updateMealItem);
   const [isEditing, setIsEditing] = useState(false);
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const entry = useMemo(
     () => entries[date] || { date, meals: [], totalMacros: EMPTY_MACROS },
@@ -166,119 +169,121 @@ export default function MealDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 16,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  icon: {
-    fontSize: 28,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  time: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  photo: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 16,
-    backgroundColor: colors.border,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  editButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(108, 92, 231, 0.12)',
-  },
-  editButtonText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  totalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-  },
-  totalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  totalItem: {
-    alignItems: 'center',
-  },
-  totalValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  totalLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  deleteButton: {
-    marginTop: 24,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.error,
-    alignItems: 'center',
-  },
-  deleteText: {
-    color: colors.error,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 16,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    icon: {
+      fontSize: 28,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+    },
+    time: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    photo: {
+      width: '100%',
+      height: 200,
+      borderRadius: 12,
+      marginBottom: 16,
+      backgroundColor: c.border,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: c.text,
+    },
+    editButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: 'rgba(108, 92, 231, 0.12)',
+    },
+    editButtonText: {
+      color: c.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    totalCard: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 12,
+    },
+    totalTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+      marginBottom: 12,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    totalItem: {
+      alignItems: 'center',
+    },
+    totalValue: {
+      fontSize: 20,
+      fontWeight: '700',
+    },
+    totalLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    deleteButton: {
+      marginTop: 24,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.error,
+      alignItems: 'center',
+    },
+    deleteText: {
+      color: c.error,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    errorText: {
+      fontSize: 16,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+  });
+}

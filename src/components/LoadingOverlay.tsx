@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   visible: boolean;
@@ -8,6 +9,9 @@ interface Props {
 }
 
 export default function LoadingOverlay({ visible, text = 'Анализируем...' }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   if (!visible) return null;
 
   return (
@@ -25,44 +29,46 @@ export default function LoadingOverlay({ visible, text = 'Анализируем
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    padding: 36,
-    alignItems: 'center',
-    minWidth: 200,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  indicatorRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(108, 92, 231, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    marginTop: 20,
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  subtext: {
-    marginTop: 6,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 24,
+      padding: 36,
+      alignItems: 'center',
+      minWidth: 200,
+      borderWidth: 1,
+      borderColor: c.border,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.2,
+      shadowRadius: 24,
+      elevation: 10,
+    },
+    indicatorRing: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: 'rgba(108, 92, 231, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    text: {
+      marginTop: 20,
+      fontSize: 17,
+      fontWeight: '600',
+      color: c.text,
+    },
+    subtext: {
+      marginTop: 6,
+      fontSize: 13,
+      color: c.textMuted,
+    },
+  });
+}

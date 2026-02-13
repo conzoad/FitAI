@@ -11,39 +11,32 @@ import {
   format,
   isSameMonth,
   isSameDay,
+  isBefore,
+  startOfDay,
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ScheduledWorkout, WorkoutSession } from '../models/types';
+import { DailyEntry } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 
 const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-interface WorkoutCalendarProps {
-  schedule: Record<string, ScheduledWorkout>;
-  sessions: Record<string, WorkoutSession[]>;
-  activeWorkout: { date: string } | null;
+interface NutritionCalendarProps {
+  entries: Record<string, DailyEntry>;
+  targetCalories: number;
   onDayPress: (date: string) => void;
-  selectedDate: string | null;
+  selectedDate: string;
 }
 
-export default function WorkoutCalendar({
-  schedule,
-  sessions,
-  activeWorkout,
+export default function NutritionCalendar({
+  entries,
+  targetCalories,
   onDayPress,
   selectedDate,
-}: WorkoutCalendarProps) {
+}: NutritionCalendarProps) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const STATUS_COLORS = {
-    completed: colors.success,
-    planned: '#74B9FF',
-    inProgress: colors.workout,
-    missed: colors.error,
-  };
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -61,28 +54,30 @@ export default function WorkoutCalendar({
   }, [currentMonth]);
 
   const today = new Date();
+  const todayStart = startOfDay(today);
 
-  const getDayStatus = (date: Date): 'completed' | 'planned' | 'inProgress' | 'missed' | 'hasSession' | null => {
+  const getDayStatus = (date: Date): 'good' | 'exceeded' | 'noData' | null => {
+    // Future dates get no dot
+    if (!isBefore(startOfDay(date), todayStart) && !isSameDay(date, today)) {
+      return null;
+    }
+
     const key = format(date, 'yyyy-MM-dd');
+    const entry = entries[key];
 
-    // Schedule status takes priority
-    const scheduled = schedule[key];
-    if (scheduled) {
-      return scheduled.status;
+    if (!entry || entry.meals.length === 0) {
+      // Only show noData for past dates, not today
+      if (isBefore(startOfDay(date), todayStart)) {
+        return 'noData';
+      }
+      return null;
     }
 
-    // Check if active workout is on this day
-    if (activeWorkout && activeWorkout.date === key) {
-      return 'inProgress';
+    if (targetCalories > 0 && entry.totalMacros.calories > targetCalories) {
+      return 'exceeded';
     }
 
-    // Check if there are completed sessions (unscheduled)
-    const daySessions = sessions[key];
-    if (daySessions && daySessions.length > 0) {
-      return 'hasSession';
-    }
-
-    return null;
+    return 'good';
   };
 
   return (
@@ -125,14 +120,12 @@ export default function WorkoutCalendar({
           const status = getDayStatus(date);
 
           let dotColor: string | null = null;
-          if (status === 'completed' || status === 'hasSession') {
-            dotColor = STATUS_COLORS.completed;
-          } else if (status === 'planned') {
-            dotColor = STATUS_COLORS.planned;
-          } else if (status === 'inProgress') {
-            dotColor = STATUS_COLORS.inProgress;
-          } else if (status === 'missed') {
-            dotColor = STATUS_COLORS.missed;
+          if (status === 'good') {
+            dotColor = colors.success;
+          } else if (status === 'exceeded') {
+            dotColor = colors.calories;
+          } else if (status === 'noData') {
+            dotColor = colors.textMuted;
           }
 
           return (
@@ -163,6 +156,22 @@ export default function WorkoutCalendar({
           );
         })}
       </View>
+
+      {/* Legend */}
+      <View style={styles.legend}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+          <Text style={styles.legendText}>В норме</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.calories }]} />
+          <Text style={styles.legendText}>Превышено</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.textMuted }]} />
+          <Text style={styles.legendText}>Нет данных</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -173,7 +182,7 @@ function getStyles(c: typeof darkColors) {
       backgroundColor: c.surface,
       borderRadius: 16,
       padding: 14,
-      marginHorizontal: 20,
+      marginHorizontal: 16,
       marginBottom: 14,
       borderWidth: 1,
       borderColor: c.border,
@@ -189,7 +198,7 @@ function getStyles(c: typeof darkColors) {
     },
     navText: {
       fontSize: 18,
-      color: c.workout,
+      color: c.primary,
       fontWeight: '600',
     },
     monthTitle: {
@@ -223,10 +232,10 @@ function getStyles(c: typeof darkColors) {
     },
     todayCell: {
       borderWidth: 1,
-      borderColor: c.workout,
+      borderColor: c.primary,
     },
     selectedCell: {
-      backgroundColor: 'rgba(162, 155, 254, 0.15)',
+      backgroundColor: 'rgba(108, 92, 231, 0.15)',
     },
     dayText: {
       fontSize: 14,
@@ -238,11 +247,11 @@ function getStyles(c: typeof darkColors) {
       opacity: 0.4,
     },
     dayTextToday: {
-      color: c.workout,
+      color: c.primary,
       fontWeight: '700',
     },
     dayTextSelected: {
-      color: c.workout,
+      color: c.primary,
       fontWeight: '700',
     },
     dot: {
@@ -250,6 +259,29 @@ function getStyles(c: typeof darkColors) {
       height: 6,
       borderRadius: 3,
       marginTop: 3,
+    },
+    legend: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 16,
+      marginTop: 10,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    legendDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    legendText: {
+      fontSize: 11,
+      color: c.textMuted,
     },
   });
 }

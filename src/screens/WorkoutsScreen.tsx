@@ -10,7 +10,8 @@ import { getAllExercises } from '../services/exerciseDatabase';
 import WorkoutCard from '../components/WorkoutCard';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import EmptyState from '../components/EmptyState';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 import { format, subDays } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -27,6 +28,9 @@ export default function WorkoutsScreen() {
   const markMissedWorkouts = useWorkoutStore((s) => s.markMissedWorkouts);
   const removeScheduledWorkout = useWorkoutStore((s) => s.removeScheduledWorkout);
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -334,295 +338,297 @@ export default function WorkoutsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 14,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  startButton: {
-    backgroundColor: colors.workout,
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    borderRadius: 20,
-    shadowColor: colors.workout,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 14,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.workout,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-  buttonsRow: {
-    paddingHorizontal: 20,
-  },
-  catalogButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  catalogIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  catalogText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  catalogArrow: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
-  // Programs
-  programsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  programsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  programsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  addProgramBadge: {
-    backgroundColor: 'rgba(162, 155, 254, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  addProgramText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.workout,
-  },
-  noProgramsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  noProgramsText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  programCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  programInfo: {
-    flex: 1,
-  },
-  programName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  programMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 3,
-  },
-  programActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  programStartBtn: {
-    backgroundColor: colors.workout,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 14,
-    shadowColor: colors.workout,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  programStartText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  programDeleteBtn: {
-    fontSize: 16,
-    color: colors.error,
-    paddingHorizontal: 6,
-  },
-  sectionHeader: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 4,
-    textTransform: 'capitalize',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  // Calendar day info
-  dayInfoCard: {
-    marginHorizontal: 20,
-    marginBottom: 14,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dayInfoDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    textTransform: 'capitalize',
-    marginBottom: 8,
-  },
-  scheduledInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  scheduledName: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  scheduledStatus: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  dayActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  dayActionBtn: {
-    backgroundColor: colors.workout,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 12,
-  },
-  dayActionBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  dayRemoveBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
-  },
-  dayRemoveBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.error,
-  },
-  dayInfoEmpty: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  miniSessionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 4,
-  },
-  miniSessionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  miniSessionExercises: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  miniSessionArrow: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  recentSection: {
-    paddingHorizontal: 20,
-  },
-  recentTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 10,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 14,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.text,
+      letterSpacing: -0.3,
+    },
+    startButton: {
+      backgroundColor: c.workout,
+      paddingHorizontal: 22,
+      paddingVertical: 11,
+      borderRadius: 20,
+      shadowColor: c.workout,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    startButtonText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    statsRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      gap: 10,
+      marginBottom: 14,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: c.workout,
+      letterSpacing: -0.5,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 4,
+      letterSpacing: 0.3,
+    },
+    buttonsRow: {
+      paddingHorizontal: 20,
+    },
+    catalogButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    catalogIcon: {
+      fontSize: 20,
+      marginRight: 10,
+    },
+    catalogText: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+    },
+    catalogArrow: {
+      fontSize: 16,
+      color: c.textMuted,
+    },
+    // Programs
+    programsSection: {
+      paddingHorizontal: 20,
+      marginBottom: 12,
+    },
+    programsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    programsTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+    },
+    addProgramBadge: {
+      backgroundColor: 'rgba(162, 155, 254, 0.12)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+    },
+    addProgramText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    noProgramsCard: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    noProgramsText: {
+      fontSize: 13,
+      color: c.textMuted,
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+    programCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 6,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    programInfo: {
+      flex: 1,
+    },
+    programName: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.text,
+    },
+    programMeta: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 3,
+    },
+    programActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    programStartBtn: {
+      backgroundColor: c.workout,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 14,
+      shadowColor: c.workout,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    programStartText: {
+      color: '#FFFFFF',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    programDeleteBtn: {
+      fontSize: 16,
+      color: c.error,
+      paddingHorizontal: 6,
+    },
+    sectionHeader: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginBottom: 8,
+      marginTop: 4,
+      textTransform: 'capitalize',
+    },
+    listContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 30,
+    },
+    // Calendar day info
+    dayInfoCard: {
+      marginHorizontal: 20,
+      marginBottom: 14,
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    dayInfoDate: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+      textTransform: 'capitalize',
+      marginBottom: 8,
+    },
+    scheduledInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: 8,
+    },
+    scheduledName: {
+      flex: 1,
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.text,
+    },
+    scheduledStatus: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    dayActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dayActionBtn: {
+      backgroundColor: c.workout,
+      paddingHorizontal: 18,
+      paddingVertical: 9,
+      borderRadius: 12,
+    },
+    dayActionBtnText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    dayRemoveBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 12,
+      backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    },
+    dayRemoveBtnText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.error,
+    },
+    dayInfoEmpty: {
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    miniSessionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surfaceLight,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 4,
+    },
+    miniSessionText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.text,
+    },
+    miniSessionExercises: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    miniSessionArrow: {
+      fontSize: 14,
+      color: c.textMuted,
+    },
+    recentSection: {
+      paddingHorizontal: 20,
+    },
+    recentTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 10,
+    },
+  });
+}

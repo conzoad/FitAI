@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,7 +10,8 @@ import {
   WorkoutStackParamList,
   AddMealStackParamList,
 } from '../models/types';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
@@ -95,6 +96,9 @@ function TabIcon({ name, color, size }: { name: string; color: string; size: num
 }
 
 export default function RootNavigator() {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -160,42 +164,44 @@ export default function RootNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.tabBarBg,
-    borderTopWidth: 1,
-    borderTopColor: colors.glassBorder,
-    height: 70,
-    paddingBottom: 10,
-    paddingTop: 6,
-    elevation: 0,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  addButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 22,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  addButtonFocused: {
-    backgroundColor: colors.primaryLight,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 30,
-    fontWeight: '600',
-    lineHeight: 32,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    tabBar: {
+      backgroundColor: c.tabBarBg,
+      borderTopWidth: 1,
+      borderTopColor: c.glassBorder,
+      height: 70,
+      paddingBottom: 10,
+      paddingTop: 6,
+      elevation: 0,
+    },
+    tabLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      letterSpacing: 0.3,
+    },
+    addButton: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      backgroundColor: c.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 22,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    addButtonFocused: {
+      backgroundColor: c.primaryLight,
+    },
+    addButtonText: {
+      color: '#FFFFFF',
+      fontSize: 30,
+      fontWeight: '600',
+      lineHeight: 32,
+    },
+  });
+}

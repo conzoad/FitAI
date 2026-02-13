@@ -12,12 +12,16 @@ import MacroSummaryBar from '../components/MacroSummaryBar';
 import MealCard from '../components/MealCard';
 import EmptyState from '../components/EmptyState';
 import { formatDateRussian, todayKey } from '../utils/dateHelpers';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 import { EMPTY_MACROS } from '../utils/constants';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList>;
 
 export default function HomeScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const navigation = useNavigation<Nav>();
   const profile = useProfileStore((s) => s.profile);
   const entries = useDiaryStore((s) => s.entries);
@@ -151,112 +155,114 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  greetingCard: {
-    marginBottom: 6,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.5,
-  },
-  date: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  ringContainer: {
-    alignItems: 'center',
-    marginVertical: 10,
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.2,
-  },
-  statsLinkBadge: {
-    backgroundColor: 'rgba(108, 92, 231, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  statsLink: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  workoutCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  workoutAccent: {
-    width: 4,
-    backgroundColor: colors.workout,
-  },
-  workoutBody: {
-    flex: 1,
-    padding: 14,
-  },
-  workoutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  workoutIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.workoutLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  workoutIcon: {
-    fontSize: 18,
-  },
-  workoutInfo: {
-    flex: 1,
-  },
-  workoutTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  workoutMeta: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  noWorkoutText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    greetingCard: {
+      marginBottom: 6,
+    },
+    greeting: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: c.text,
+      letterSpacing: -0.5,
+    },
+    date: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    ringContainer: {
+      alignItems: 'center',
+      marginVertical: 10,
+      marginBottom: 20,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 14,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      letterSpacing: -0.2,
+    },
+    statsLinkBadge: {
+      backgroundColor: 'rgba(108, 92, 231, 0.12)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+    },
+    statsLink: {
+      fontSize: 13,
+      color: c.primary,
+      fontWeight: '700',
+    },
+    workoutCard: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    workoutAccent: {
+      width: 4,
+      backgroundColor: c.workout,
+    },
+    workoutBody: {
+      flex: 1,
+      padding: 14,
+    },
+    workoutHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    workoutIconCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: c.workoutLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    workoutIcon: {
+      fontSize: 18,
+    },
+    workoutInfo: {
+      flex: 1,
+    },
+    workoutTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.text,
+    },
+    workoutMeta: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 3,
+    },
+    noWorkoutText: {
+      fontSize: 14,
+      color: c.textMuted,
+      textAlign: 'center',
+      paddingVertical: 8,
+    },
+  });
+}

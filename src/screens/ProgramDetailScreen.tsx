@@ -16,12 +16,16 @@ import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById, getAllExercises } from '../services/exerciseDatabase';
 import { MUSCLE_LABELS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Route = RouteProp<WorkoutStackParamList, 'ProgramDetail'>;
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'ProgramDetail'>;
 
 export default function ProgramDetailScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const { programId } = route.params;
@@ -114,129 +118,131 @@ export default function ProgramDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  meta: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  exerciseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  gif: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: colors.background,
-  },
-  gifPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gifPlaceholderText: {
-    fontSize: 24,
-  },
-  exerciseInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  exerciseName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  exerciseTarget: {
-    fontSize: 13,
-    color: colors.workout,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  muscleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 6,
-  },
-  muscleChip: {
-    backgroundColor: colors.workoutLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  muscleChipText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.workout,
-  },
-  arrow: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginLeft: 8,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    paddingBottom: 34,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  startButton: {
-    backgroundColor: colors.workout,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: colors.workout,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 100,
+    },
+    backButton: {
+      marginBottom: 12,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: c.text,
+      letterSpacing: -0.3,
+    },
+    meta: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginTop: 4,
+      marginBottom: 20,
+    },
+    errorText: {
+      fontSize: 16,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+    exerciseCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    gif: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+      backgroundColor: c.background,
+    },
+    gifPlaceholder: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    gifPlaceholderText: {
+      fontSize: 24,
+    },
+    exerciseInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    exerciseName: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.text,
+    },
+    exerciseTarget: {
+      fontSize: 13,
+      color: c.workout,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    muscleRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      marginTop: 6,
+    },
+    muscleChip: {
+      backgroundColor: c.workoutLight,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    muscleChipText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: c.workout,
+    },
+    arrow: {
+      fontSize: 16,
+      color: c.textMuted,
+      marginLeft: 8,
+    },
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 20,
+      paddingBottom: 34,
+      backgroundColor: c.surface,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    startButton: {
+      backgroundColor: c.workout,
+      paddingVertical: 14,
+      borderRadius: 16,
+      alignItems: 'center',
+      shadowColor: c.workout,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    startButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

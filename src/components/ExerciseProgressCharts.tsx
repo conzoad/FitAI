@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { SessionMetrics } from '../utils/calculations';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   metrics: SessionMetrics[];
@@ -20,6 +21,8 @@ const TABS: { key: ChartTab; label: string; unit: string; color: string }[] = [
 const screenWidth = Dimensions.get('window').width - 72;
 
 export default function ExerciseProgressCharts({ metrics }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [activeTab, setActiveTab] = useState<ChartTab>('maxWeight');
 
   if (metrics.length < 2) {
@@ -103,56 +106,58 @@ export default function ExerciseProgressCharts({ metrics }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 8,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceLight,
-  },
-  tabActive: {
-    backgroundColor: colors.workout,
-  },
-  tabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 12,
-  },
-  currentValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  diffText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  chart: {
-    borderRadius: 12,
-    marginLeft: -8,
-  },
-  noData: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 30,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      paddingTop: 8,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      gap: 6,
+      marginBottom: 16,
+      flexWrap: 'wrap',
+    },
+    tab: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 16,
+      backgroundColor: c.surfaceLight,
+    },
+    tabActive: {
+      backgroundColor: c.workout,
+    },
+    tabText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    tabTextActive: {
+      color: '#FFFFFF',
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 8,
+      marginBottom: 12,
+    },
+    currentValue: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: c.text,
+    },
+    diffText: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    chart: {
+      borderRadius: 12,
+      marginLeft: -8,
+    },
+    noData: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 30,
+    },
+  });
+}

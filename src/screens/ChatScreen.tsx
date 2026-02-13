@@ -22,7 +22,8 @@ import { todayKey } from '../utils/dateHelpers';
 import { format, subDays, addDays } from 'date-fns';
 import type { DailyEntry, MealType, ChatAction, AIProgramSuggestion } from '../models/types';
 import ChatMessageComponent from '../components/ChatMessage';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 export default function ChatScreen() {
   const { messages, isLoading, addMessage, setLoading, clearHistory } = useChatStore();
@@ -35,6 +36,9 @@ export default function ChatScreen() {
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const exerciseIds = useMemo(() => {
     return getAllExercises(customExercises).map((e) => `${e.id} (${e.name})`).join(', ');
@@ -312,180 +316,182 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerIconText: {
-    fontSize: 18,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: colors.success,
-    fontWeight: '500',
-    marginTop: 1,
-  },
-  clearButton: {
-    backgroundColor: 'rgba(255, 107, 107, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  clearText: {
-    fontSize: 13,
-    color: colors.error,
-    fontWeight: '600',
-  },
-  messageList: {
-    paddingVertical: 12,
-    flexGrow: 1,
-  },
-  emptyChat: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    paddingTop: 80,
-  },
-  emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 28,
-    backgroundColor: colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyIcon: {
-    fontSize: 40,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 21,
-  },
-  quickActions: {
-    gap: 8,
-    width: '100%',
-  },
-  quickChip: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  quickText: {
-    fontSize: 14,
-    color: colors.primaryLight,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  typingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  typingDots: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    opacity: 0.6,
-  },
-  dot1: { opacity: 0.4 },
-  dot2: { opacity: 0.6 },
-  dot3: { opacity: 0.8 },
-  typingText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 12,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.text,
-    maxHeight: 100,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  sendDisabled: {
-    backgroundColor: colors.surfaceLight,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  sendText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    headerIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: c.surfaceLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerIconText: {
+      fontSize: 18,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: c.text,
+    },
+    headerSubtitle: {
+      fontSize: 12,
+      color: c.success,
+      fontWeight: '500',
+      marginTop: 1,
+    },
+    clearButton: {
+      backgroundColor: 'rgba(255, 107, 107, 0.12)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 10,
+    },
+    clearText: {
+      fontSize: 13,
+      color: c.error,
+      fontWeight: '600',
+    },
+    messageList: {
+      paddingVertical: 12,
+      flexGrow: 1,
+    },
+    emptyChat: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 32,
+      paddingTop: 80,
+    },
+    emptyIconCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: 28,
+      backgroundColor: c.surfaceLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    emptyIcon: {
+      fontSize: 40,
+    },
+    emptyTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: c.text,
+      marginBottom: 8,
+      letterSpacing: -0.3,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginBottom: 28,
+      lineHeight: 21,
+    },
+    quickActions: {
+      gap: 8,
+      width: '100%',
+    },
+    quickChip: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+    },
+    quickText: {
+      fontSize: 14,
+      color: c.primaryLight,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    typingIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+      gap: 8,
+    },
+    typingDots: {
+      flexDirection: 'row',
+      gap: 4,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.primary,
+      opacity: 0.6,
+    },
+    dot1: { opacity: 0.4 },
+    dot2: { opacity: 0.6 },
+    dot3: { opacity: 0.8 },
+    typingText: {
+      fontSize: 13,
+      color: c.textMuted,
+      fontStyle: 'italic',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      padding: 12,
+      backgroundColor: c.surface,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: c.surfaceLight,
+      borderRadius: 22,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: c.text,
+      maxHeight: 100,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: c.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    sendDisabled: {
+      backgroundColor: c.surfaceLight,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
+    sendText: {
+      color: '#FFFFFF',
+      fontSize: 22,
+      fontWeight: '700',
+    },
+  });
+}

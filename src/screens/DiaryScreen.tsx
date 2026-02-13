@@ -7,10 +7,12 @@ import { useDiaryStore } from '../stores/useDiaryStore';
 import { DiaryStackParamList, MealType } from '../models/types';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
-import DaySelector from '../components/DaySelector';
+import NutritionCalendar from '../components/NutritionCalendar';
 import MealCard from '../components/MealCard';
 import EmptyState from '../components/EmptyState';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
+import { useProfileStore } from '../stores/useProfileStore';
 
 type Nav = NativeStackNavigationProp<DiaryStackParamList>;
 
@@ -19,6 +21,11 @@ export default function DiaryScreen() {
   const [selectedDate, setSelectedDate] = useState(todayKey());
   const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
+  const targetCalories = useProfileStore((s) => s.profile.targetCalories);
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const entry = useMemo(
     () => entries[selectedDate] || { date: selectedDate, meals: [], totalMacros: EMPTY_MACROS },
     [entries, selectedDate]
@@ -40,32 +47,37 @@ export default function DiaryScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <Text style={styles.title}>Дневник питания</Text>
-      <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <NutritionCalendar
+          entries={entries}
+          targetCalories={targetCalories}
+          onDayPress={setSelectedDate}
+          selectedDate={selectedDate}
+        />
 
-      <View style={styles.dailyTotal}>
-        <Text style={styles.dailyCalories}>
-          {Math.round(entry.totalMacros.calories)} ккал
-        </Text>
-        <View style={styles.dailyMacrosRow}>
-          <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
-            <Text style={[styles.macroText, { color: colors.proteins }]}>
-              Б:{Math.round(entry.totalMacros.proteins)}г
-            </Text>
-          </View>
-          <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
-            <Text style={[styles.macroText, { color: colors.fats }]}>
-              Ж:{Math.round(entry.totalMacros.fats)}г
-            </Text>
-          </View>
-          <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
-            <Text style={[styles.macroText, { color: colors.carbs }]}>
-              У:{Math.round(entry.totalMacros.carbs)}г
-            </Text>
+        <View style={styles.dailyTotal}>
+          <Text style={styles.dailyCalories}>
+            {Math.round(entry.totalMacros.calories)} ккал
+          </Text>
+          <View style={styles.dailyMacrosRow}>
+            <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
+              <Text style={[styles.macroText, { color: colors.proteins }]}>
+                Б:{Math.round(entry.totalMacros.proteins)}г
+              </Text>
+            </View>
+            <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
+              <Text style={[styles.macroText, { color: colors.fats }]}>
+                Ж:{Math.round(entry.totalMacros.fats)}г
+              </Text>
+            </View>
+            <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
+              <Text style={[styles.macroText, { color: colors.carbs }]}>
+                У:{Math.round(entry.totalMacros.carbs)}г
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {entry.meals.length === 0 ? (
           <EmptyState
             icon="📝"
@@ -103,64 +115,65 @@ export default function DiaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    letterSpacing: -0.3,
-  },
-  dailyTotal: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: colors.surface,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  dailyCalories: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.calories,
-    letterSpacing: -0.5,
-  },
-  dailyMacrosRow: {
-    flexDirection: 'row',
-    marginTop: 8,
-    gap: 8,
-  },
-  macroPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  macroText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 10,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.text,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      letterSpacing: -0.3,
+    },
+    dailyTotal: {
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      alignItems: 'center',
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    dailyCalories: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.calories,
+      letterSpacing: -0.5,
+    },
+    dailyMacrosRow: {
+      flexDirection: 'row',
+      marginTop: 8,
+      gap: 8,
+    },
+    macroPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    macroText: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      padding: 16,
+      paddingBottom: 40,
+    },
+    section: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 10,
+    },
+  });
+}

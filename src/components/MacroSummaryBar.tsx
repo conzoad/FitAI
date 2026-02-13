@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import MacroCircle from './MacroCircle';
 import { Macros } from '../models/types';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   macros: Macros;
@@ -10,6 +11,9 @@ interface Props {
 }
 
 export default function MacroSummaryBar({ macros, targets }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <View style={styles.container}>
@@ -36,17 +40,19 @@ export default function MacroSummaryBar({ macros, targets }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingVertical: 16,
+      paddingHorizontal: 8,
+    },
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+  });
+}

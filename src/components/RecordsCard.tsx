@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ExerciseRecords } from '../utils/calculations';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   records: ExerciseRecords;
@@ -80,6 +81,8 @@ function buildRecordItems(records: ExerciseRecords): RecordItem[] {
 }
 
 export default function RecordsCard({ records }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const items = buildRecordItems(records);
 
   if (items.length === 0) {
@@ -106,49 +109,51 @@ export default function RecordsCard({ records }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 8,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  card: {
-    width: '48%',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  cardValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.personalRecord,
-    marginBottom: 2,
-  },
-  cardDetail: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  cardDate: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  noData: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 30,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      paddingTop: 8,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    card: {
+      width: '48%',
+      backgroundColor: c.surfaceLight,
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    cardLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: c.textSecondary,
+      textTransform: 'uppercase',
+      marginBottom: 4,
+    },
+    cardValue: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: c.personalRecord,
+      marginBottom: 2,
+    },
+    cardDetail: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    cardDate: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 4,
+    },
+    noData: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 30,
+    },
+  });
+}

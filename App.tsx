@@ -6,9 +6,10 @@ import { StatusBar } from 'expo-status-bar';
 import RootNavigator from './src/navigation/RootNavigator';
 import { useProfileStore } from './src/stores/useProfileStore';
 import { useAuthStore } from './src/stores/useAuthStore';
+import { useThemeStore } from './src/stores/useThemeStore';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AuthScreen from './src/screens/AuthScreen';
-import { colors } from './src/theme/colors';
+import { useColors } from './src/theme/useColors';
 import { loadFromFirestoreIfEmpty, startSyncListeners } from './src/services/firestoreSync';
 
 export default function App() {
@@ -18,6 +19,8 @@ export default function App() {
   const isOnboarded = useProfileStore((s) => s.profile.isOnboarded);
   const hasHydrated = useProfileStore((s) => s._hasHydrated);
   const syncCleanupRef = useRef<(() => void) | null>(null);
+  const theme = useThemeStore((s) => s.theme);
+  const colors = useColors();
 
   useEffect(() => {
     const unsubscribe = useAuthStore.getState()._initAuthListener();
@@ -51,6 +54,8 @@ export default function App() {
     };
   }, [isAuthenticated, hasHydrated, uid]);
 
+  const statusBarStyle = theme === 'light' ? 'dark' : theme === 'dark' ? 'light' : 'auto';
+
   if (isLoading || !hasHydrated) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -62,7 +67,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <StatusBar style="light" />
+        <StatusBar style={statusBarStyle} />
         {!isAuthenticated ? (
           <AuthScreen />
         ) : isOnboarded ? (

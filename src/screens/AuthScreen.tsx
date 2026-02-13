@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,8 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { useAuthStore } from '../stores/useAuthStore';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -31,6 +32,8 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
 
@@ -199,157 +202,159 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 24,
-    paddingBottom: 40,
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: 36,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(108, 92, 231, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  logoEmoji: {
-    fontSize: 36,
-  },
-  appName: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.primary,
-    marginBottom: 8,
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  modeRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 11,
-    alignItems: 'center',
-  },
-  modeActive: {
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  modeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  modeTextActive: {
-    color: '#FFFFFF',
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
-    marginBottom: 8,
-    marginTop: 16,
-    letterSpacing: 1.2,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 17,
-    alignItems: 'center',
-    marginTop: 28,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 28,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    gap: 10,
-  },
-  googleIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#4285F4',
-  },
-  googleText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 24,
+      paddingBottom: 40,
+      justifyContent: 'center',
+      flexGrow: 1,
+    },
+    headerSection: {
+      alignItems: 'center',
+      marginBottom: 36,
+    },
+    logoCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(108, 92, 231, 0.15)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+      borderWidth: 2,
+      borderColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    logoEmoji: {
+      fontSize: 36,
+    },
+    appName: {
+      fontSize: 36,
+      fontWeight: '800',
+      color: c.primary,
+      marginBottom: 8,
+      letterSpacing: -1,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: c.textSecondary,
+    },
+    modeRow: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 4,
+      marginBottom: 28,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modeTab: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 11,
+      alignItems: 'center',
+    },
+    modeActive: {
+      backgroundColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    modeText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.textMuted,
+    },
+    modeTextActive: {
+      color: '#FFFFFF',
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.textMuted,
+      marginBottom: 8,
+      marginTop: 16,
+      letterSpacing: 1.2,
+    },
+    input: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      fontSize: 16,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    primaryButton: {
+      backgroundColor: c.primary,
+      borderRadius: 14,
+      padding: 17,
+      alignItems: 'center',
+      marginTop: 28,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    buttonDisabled: {
+      opacity: 0.7,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 28,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: c.border,
+    },
+    dividerText: {
+      marginHorizontal: 16,
+      fontSize: 14,
+      color: c.textMuted,
+    },
+    googleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 15,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      gap: 10,
+    },
+    googleIcon: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#4285F4',
+    },
+    googleText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+    },
+  });
+}

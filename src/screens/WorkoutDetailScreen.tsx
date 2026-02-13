@@ -9,12 +9,16 @@ import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
 import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Route = RouteProp<WorkoutStackParamList, 'WorkoutDetail'>;
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'WorkoutDetail'>;
 
 export default function WorkoutDetailScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const { sessionId, date } = route.params;
@@ -149,143 +153,145 @@ export default function WorkoutDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  time: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 12,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.workout,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  exerciseBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 10,
-    overflow: 'hidden',
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  exerciseGif: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-  },
-  gifPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gifPlaceholderText: {
-    fontSize: 20,
-  },
-  exerciseInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  muscleText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  exerciseArrow: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginLeft: 8,
-  },
-  notes: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    padding: 12,
-    fontStyle: 'italic',
-  },
-  notesBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 8,
-  },
-  notesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  notesText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  deleteButton: {
-    marginTop: 24,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.error,
-    alignItems: 'center',
-  },
-  deleteText: {
-    color: colors.error,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    backButton: {
+      marginBottom: 12,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: c.text,
+    },
+    time: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 20,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 10,
+      padding: 12,
+      alignItems: 'center',
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    exerciseBlock: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      marginBottom: 10,
+      overflow: 'hidden',
+    },
+    exerciseHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    exerciseGif: {
+      width: 50,
+      height: 50,
+      borderRadius: 8,
+      backgroundColor: c.background,
+    },
+    gifPlaceholder: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    gifPlaceholderText: {
+      fontSize: 20,
+    },
+    exerciseInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    exerciseName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+    },
+    muscleText: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    exerciseArrow: {
+      fontSize: 14,
+      color: c.textMuted,
+      marginLeft: 8,
+    },
+    notes: {
+      fontSize: 13,
+      color: c.textSecondary,
+      padding: 12,
+      fontStyle: 'italic',
+    },
+    notesBlock: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 8,
+    },
+    notesTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+      marginBottom: 6,
+    },
+    notesText: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    deleteButton: {
+      marginTop: 24,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.error,
+      alignItems: 'center',
+    },
+    deleteText: {
+      color: c.error,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    errorText: {
+      fontSize: 16,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+  });
+}

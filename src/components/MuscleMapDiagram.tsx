@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, Rect, Ellipse } from 'react-native-svg';
 import { MuscleId } from '../models/types';
 import { MUSCLE_LABELS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   primary: MuscleId[];
@@ -32,6 +33,8 @@ function getDeltsColor(primary: MuscleId[], secondary: MuscleId[]): string {
 }
 
 export default function MuscleMapDiagram({ primary, secondary }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const allMuscles = [...new Set([...primary, ...secondary])];
 
   return (
@@ -156,56 +159,58 @@ export default function MuscleMapDiagram({ primary, secondary }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  diagramRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  bodyView: {
-    alignItems: 'center',
-  },
-  viewLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  legend: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 10,
-    gap: 6,
-  },
-  legendSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 6,
-  },
-  legendLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  legendMuscles: {
-    fontSize: 12,
-    color: colors.text,
-    flex: 1,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    diagramRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+    },
+    bodyView: {
+      alignItems: 'center',
+    },
+    viewLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '600',
+      marginBottom: 6,
+      textTransform: 'uppercase',
+    },
+    legend: {
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingTop: 10,
+      gap: 6,
+    },
+    legendSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginRight: 6,
+    },
+    legendLabel: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: '600',
+    },
+    legendMuscles: {
+      fontSize: 12,
+      color: c.text,
+      flex: 1,
+    },
+  });
+}

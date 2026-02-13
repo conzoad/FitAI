@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,8 @@ import { todayKey } from '../utils/dateHelpers';
 import { generateId } from '../utils/calculations';
 import FoodItemCard from '../components/FoodItemCard';
 import LoadingOverlay from '../components/LoadingOverlay';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
 
 type InputMode = 'text' | 'photo' | 'search';
@@ -37,6 +38,9 @@ export default function AddMealScreen() {
   const searchLibrary = useFoodLibraryStore((s) => s.searchItems);
   const navigation = useNavigation<Nav>();
   const route = useRoute<RouteProp<AddMealStackParamList, 'AddMeal'>>();
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [mode, setMode] = useState<InputMode>('text');
@@ -490,316 +494,318 @@ export default function AddMealScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-    marginBottom: 18,
-    letterSpacing: -0.3,
-  },
-  mealTypeRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 16,
-  },
-  mealTypeChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  mealTypeActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  mealTypeText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  mealTypeTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  modeRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 11,
-    alignItems: 'center',
-  },
-  modeActive: {
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  modeText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  modeTextActive: {
-    color: '#FFFFFF',
-  },
-  textArea: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    minHeight: 90,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: colors.border,
-    lineHeight: 22,
-  },
-  analyzeButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  analyzeText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  photoButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(108, 92, 231, 0.1)',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  photoButtonText: {
-    color: colors.primaryLight,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  preview: {
-    width: '100%',
-    height: 200,
-    borderRadius: 16,
-    marginTop: 12,
-    backgroundColor: colors.surface,
-  },
-  // Search
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-  },
-  searchingText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  searchResultsList: {
-    marginTop: 12,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchResultInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  searchResultName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  searchResultBrand: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  searchResultMacros: {
-    alignItems: 'flex-end',
-  },
-  searchResultKcal: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  searchResultBju: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  noSearchResults: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: 24,
-  },
-  searchSectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    marginTop: 12,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  // Results
-  resultContainer: {
-    marginTop: 24,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  confidence: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  totalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  totalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 10,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  totalValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  disclaimer: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 10,
-    fontStyle: 'italic',
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 17,
-    alignItems: 'center',
-    marginTop: 18,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  saveText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  newButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 17,
-    alignItems: 'center',
-    marginTop: 18,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  newText: {
-    color: colors.primaryLight,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  barcodeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    gap: 8,
-  },
-  barcodeIcon: {
-    fontSize: 18,
-  },
-  barcodeText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.text,
+      marginBottom: 18,
+      letterSpacing: -0.3,
+    },
+    mealTypeRow: {
+      flexDirection: 'row',
+      gap: 6,
+      marginBottom: 16,
+    },
+    mealTypeChip: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    mealTypeActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    mealTypeText: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    mealTypeTextActive: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+    modeRow: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 4,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modeTab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 11,
+      alignItems: 'center',
+    },
+    modeActive: {
+      backgroundColor: c.primary,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    modeText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.textMuted,
+    },
+    modeTextActive: {
+      color: '#FFFFFF',
+    },
+    textArea: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      fontSize: 16,
+      color: c.text,
+      minHeight: 90,
+      textAlignVertical: 'top',
+      borderWidth: 1,
+      borderColor: c.border,
+      lineHeight: 22,
+    },
+    analyzeButton: {
+      backgroundColor: c.primary,
+      borderRadius: 14,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 12,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+    analyzeText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    photoButton: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: 'rgba(108, 92, 231, 0.1)',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.primary,
+    },
+    photoButtonText: {
+      color: c.primaryLight,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    preview: {
+      width: '100%',
+      height: 200,
+      borderRadius: 16,
+      marginTop: 12,
+      backgroundColor: c.surface,
+    },
+    // Search
+    searchInput: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      fontSize: 16,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    searchingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 16,
+    },
+    searchingText: {
+      fontSize: 14,
+      color: c.textSecondary,
+    },
+    searchResultsList: {
+      marginTop: 12,
+    },
+    searchResultItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 6,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    searchResultInfo: {
+      flex: 1,
+      marginRight: 10,
+    },
+    searchResultName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.text,
+    },
+    searchResultBrand: {
+      fontSize: 12,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    searchResultMacros: {
+      alignItems: 'flex-end',
+    },
+    searchResultKcal: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    searchResultBju: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    noSearchResults: {
+      fontSize: 14,
+      color: c.textMuted,
+      textAlign: 'center',
+      paddingVertical: 24,
+    },
+    searchSectionLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.textSecondary,
+      marginTop: 12,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    // Results
+    resultContainer: {
+      marginTop: 24,
+    },
+    resultHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    resultTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: c.text,
+    },
+    confidence: {
+      fontSize: 13,
+      color: c.textSecondary,
+      fontWeight: '500',
+    },
+    totalCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    totalTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 10,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    totalValue: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    disclaimer: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 10,
+      fontStyle: 'italic',
+    },
+    saveButton: {
+      backgroundColor: c.primary,
+      borderRadius: 14,
+      padding: 17,
+      alignItems: 'center',
+      marginTop: 18,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    saveText: {
+      color: '#FFFFFF',
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    newButton: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 17,
+      alignItems: 'center',
+      marginTop: 18,
+      borderWidth: 1,
+      borderColor: c.primary,
+    },
+    newText: {
+      color: c.primaryLight,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+    barcodeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      gap: 8,
+    },
+    barcodeIcon: {
+      fontSize: 18,
+    },
+    barcodeText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: c.text,
+    },
+  });
+}

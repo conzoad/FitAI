@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   consumed: number;
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export default function GoalProgressRing({ consumed, target, size = 180 }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -58,42 +61,44 @@ export default function GoalProgressRing({ consumed, target, size = 180 }: Props
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  value: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -1,
-  },
-  unit: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginTop: -2,
-  },
-  label: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  percentBadge: {
-    marginTop: 6,
-    backgroundColor: 'rgba(108, 92, 231, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  percentText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    textContainer: {
+      position: 'absolute',
+      alignItems: 'center',
+    },
+    value: {
+      fontSize: 36,
+      fontWeight: '800',
+      color: c.text,
+      letterSpacing: -1,
+    },
+    unit: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.textSecondary,
+      marginTop: -2,
+    },
+    label: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    percentBadge: {
+      marginTop: 6,
+      backgroundColor: 'rgba(108, 92, 231, 0.15)',
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 10,
+    },
+    percentText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: c.primary,
+    },
+  });
+}

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Meal } from '../models/types';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   meal: Meal;
@@ -10,14 +11,17 @@ interface Props {
   onDelete?: () => void;
 }
 
-const ACCENT_COLORS: Record<string, string> = {
-  breakfast: colors.fats,
-  lunch: colors.carbs,
-  dinner: colors.proteins,
-  snack: colors.primaryLight,
-};
-
 export default function MealCard({ meal, onPress, onDelete }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
+  const ACCENT_COLORS: Record<string, string> = {
+    breakfast: colors.fats,
+    lunch: colors.carbs,
+    dinner: colors.proteins,
+    snack: colors.primaryLight,
+  };
+
   const itemNames = meal.items.map((i) => i.name).join(', ');
   const accentColor = ACCENT_COLORS[meal.type] || colors.primary;
 
@@ -53,68 +57,70 @@ export default function MealCard({ meal, onPress, onDelete }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  accent: {
-    width: 4,
-  },
-  body: {
-    flex: 1,
-    padding: 14,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  icon: {
-    fontSize: 20,
-  },
-  type: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  calorieBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  calories: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  items: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  macrosRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 6,
-  },
-  macroItem: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  macroDot: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    accent: {
+      width: 4,
+    },
+    body: {
+      flex: 1,
+      padding: 14,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    icon: {
+      fontSize: 20,
+    },
+    type: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+    },
+    calorieBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    calories: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    items: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginTop: 8,
+      lineHeight: 20,
+    },
+    macrosRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 6,
+      gap: 6,
+    },
+    macroItem: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    macroDot: {
+      fontSize: 13,
+      color: c.textMuted,
+    },
+  });
+}

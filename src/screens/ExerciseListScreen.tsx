@@ -9,7 +9,8 @@ import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { Exercise, MuscleGroup, ExerciseCategory, Equipment, ExerciseForce, ExerciseLevel, WorkoutStackParamList } from '../models/types';
 import ExerciseCard from '../components/ExerciseCard';
 import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, EXERCISE_CATEGORY_LABELS, EXERCISE_FORCE_LABELS, EXERCISE_LEVEL_LABELS } from '../utils/constants';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'ExerciseList'>;
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseList'>;
@@ -37,6 +38,9 @@ export default function ExerciseListScreen() {
   const [filterLevel, setFilterLevel] = useState<ExerciseLevel | null>(null);
 
   const activeFilterCount = [filterCategory, filterEquipment, filterForce, filterLevel].filter(Boolean).length;
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const groups = useMemo(() => getAllMuscleGroups(), []);
 
@@ -252,230 +256,232 @@ export default function ExerciseListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  backButton: {
-    marginBottom: 8,
-  },
-  backText: {
-    fontSize: 16,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 8,
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterButtonActive: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  filterButtonText: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  sortRow: {
-    marginBottom: 6,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  sortContent: {
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  sortChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 6,
-  },
-  sortChipActive: {
-    backgroundColor: colors.workoutLight,
-    borderColor: colors.workout,
-  },
-  sortChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  sortChipTextActive: {
-    color: colors.workout,
-  },
-  filterRow: {
-    marginBottom: 8,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  filterContent: {
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 6,
-  },
-  filterActive: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  filterTextActive: {
-    color: '#FFFFFF',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 80,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    padding: 40,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.workout,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  fabText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '300',
-    marginTop: -2,
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  clearText: {
-    fontSize: 14,
-    color: colors.workout,
-    fontWeight: '600',
-  },
-  filterSection: {
-    marginBottom: 16,
-  },
-  filterSectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  modalChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 6,
-    marginBottom: 6,
-  },
-  modalChipActive: {
-    backgroundColor: colors.workout,
-    borderColor: colors.workout,
-  },
-  modalChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  modalChipTextActive: {
-    color: '#FFFFFF',
-  },
-  applyButton: {
-    backgroundColor: colors.workout,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  applyText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 8,
+    },
+    backButton: {
+      marginBottom: 8,
+    },
+    backText: {
+      fontSize: 16,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: c.text,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      gap: 8,
+      marginBottom: 8,
+    },
+    searchInput: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 15,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    filterButton: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    filterButtonActive: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    filterButtonText: {
+      fontSize: 16,
+      color: c.text,
+      fontWeight: '600',
+    },
+    sortRow: {
+      marginBottom: 6,
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    sortContent: {
+      paddingHorizontal: 20,
+      alignItems: 'center',
+    },
+    sortChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginRight: 6,
+    },
+    sortChipActive: {
+      backgroundColor: c.workoutLight,
+      borderColor: c.workout,
+    },
+    sortChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    sortChipTextActive: {
+      color: c.workout,
+    },
+    filterRow: {
+      marginBottom: 8,
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    filterContent: {
+      paddingHorizontal: 20,
+      alignItems: 'center',
+    },
+    filterChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 18,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginRight: 6,
+    },
+    filterActive: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    filterText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    filterTextActive: {
+      color: '#FFFFFF',
+    },
+    listContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 80,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      padding: 40,
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.workout,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+    },
+    fabText: {
+      fontSize: 28,
+      color: '#FFFFFF',
+      fontWeight: '300',
+      marginTop: -2,
+    },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: c.background,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      maxHeight: '80%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: c.text,
+    },
+    clearText: {
+      fontSize: 14,
+      color: c.workout,
+      fontWeight: '600',
+    },
+    filterSection: {
+      marginBottom: 16,
+    },
+    filterSectionLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginBottom: 8,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    modalChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 16,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginRight: 6,
+      marginBottom: 6,
+    },
+    modalChipActive: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+    },
+    modalChipText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: c.textSecondary,
+    },
+    modalChipTextActive: {
+      color: '#FFFFFF',
+    },
+    applyButton: {
+      backgroundColor: c.workout,
+      borderRadius: 14,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    applyText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+  });
+}

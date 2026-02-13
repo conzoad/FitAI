@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,14 @@ import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
 import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
+import {
+  requestNotificationPermissions,
+  showRestTimerNotification,
+  clearRestTimerNotification,
+  clearAllNotifications,
+} from '../services/notificationService';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'StartWorkout'>;
 
@@ -39,6 +46,9 @@ export default function StartWorkoutScreen() {
   const removeExercise = useWorkoutStore((s) => s.removeExercise);
   const finishWorkout = useWorkoutStore((s) => s.finishWorkout);
   const cancelWorkout = useWorkoutStore((s) => s.cancelWorkout);
+
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [timer, setTimer] = useState(0);
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
@@ -61,6 +71,14 @@ export default function StartWorkoutScreen() {
     if (!activeWorkout) {
       startWorkout();
     }
+  }, []);
+
+  // Request notification permissions on mount
+  useEffect(() => {
+    requestNotificationPermissions();
+    return () => {
+      clearAllNotifications();
+    };
   }, []);
 
   // Initialize exercise start times when exercises appear
@@ -97,20 +115,15 @@ export default function StartWorkoutScreen() {
         return next;
       });
 
-      // Update rest countdowns
+      // Update rest countdowns — continue into negative
       setRestTimers((prev) => {
-        let changed = false;
         const next: Record<string, { remaining: number; total: number }> = {};
+        let changed = false;
         for (const [id, rt] of Object.entries(prev)) {
-          if (rt.remaining > 0) {
-            next[id] = { ...rt, remaining: rt.remaining - 1 };
-            changed = true;
-            if (rt.remaining === 1) {
-              // Timer just hit zero — vibrate
-              Vibration.vibrate(500);
-            }
-          } else {
-            next[id] = rt;
+          next[id] = { ...rt, remaining: rt.remaining - 1 };
+          changed = true;
+          if (rt.remaining === 1) {
+            Vibration.vibrate(500);
           }
         }
         return changed ? next : prev;
@@ -118,6 +131,20 @@ export default function StartWorkoutScreen() {
     }, 1000);
     return () => clearInterval(interval);
   }, [activeWorkout?.startTime, exerciseStartTimes]);
+
+  // Update notification when rest timers change
+  useEffect(() => {
+    const entries = Object.entries(restTimers);
+    if (entries.length === 0) {
+      clearRestTimerNotification();
+      return;
+    }
+    // Show notification for the first active rest timer
+    const [exerciseId, rt] = entries[0];
+    const exercise = activeWorkout?.exercises.find((e) => e.id === exerciseId);
+    const name = exercise?.exerciseName || 'Упражнение';
+    showRestTimerNotification(name, rt.remaining, rt.total);
+  }, [restTimers, activeWorkout?.exercises]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -146,6 +173,9 @@ export default function StartWorkoutScreen() {
     setRestTimers((prev) => {
       const next = { ...prev };
       delete next[exerciseId];
+      if (Object.keys(next).length === 0) {
+        clearRestTimerNotification();
+      }
       return next;
     });
   };
@@ -165,6 +195,7 @@ export default function StartWorkoutScreen() {
       {
         text: 'Завершить',
         onPress: () => {
+          clearAllNotifications();
           finishWorkout();
           navigation.goBack();
         },
@@ -179,6 +210,7 @@ export default function StartWorkoutScreen() {
         text: 'Да, отменить',
         style: 'destructive',
         onPress: () => {
+          clearAllNotifications();
           cancelWorkout();
           navigation.goBack();
         },
@@ -189,7 +221,19 @@ export default function StartWorkoutScreen() {
   const getRestProgress = (exerciseId: string): number => {
     const rt = restTimers[exerciseId];
     if (!rt || rt.total === 0) return 0;
-    return rt.remaining / rt.total;
+    return Math.max(0, rt.remaining / rt.total);
+  };
+
+  const handleAddTime = (exerciseId: string, seconds: number) => {
+    setRestTimers((prev) => {
+      const rt = prev[exerciseId];
+      if (!rt) return prev;
+      const newRemaining = rt.remaining < 0 ? seconds : rt.remaining + seconds;
+      return {
+        ...prev,
+        [exerciseId]: { remaining: newRemaining, total: rt.total + seconds },
+      };
+    });
   };
 
   if (!activeWorkout) {
@@ -226,7 +270,8 @@ export default function StartWorkoutScreen() {
               const exerciseData = getExerciseById(ex.exerciseId, customExercises);
               const gifUrl = exerciseData?.gifUrl;
               const restTimer = restTimers[ex.id];
-              const isResting = restTimer && restTimer.remaining > 0;
+              const isResting = restTimer !== undefined;
+              const isOvertime = restTimer && restTimer.remaining < 0;
               const elapsed = exerciseElapsed[ex.id] || 0;
               const currentRestDuration = restDurations[ex.id] || DEFAULT_REST;
 
@@ -294,22 +339,40 @@ export default function StartWorkoutScreen() {
 
                   {/* Rest countdown */}
                   {isResting && (
-                    <View style={styles.restBar}>
+                    <View style={[styles.restBar, isOvertime && styles.restBarOvertime]}>
                       <View style={styles.restBarContent}>
-                        <Text style={styles.restLabel}>Отдых</Text>
-                        <Text style={styles.restCountdown}>{formatTime(restTimer.remaining)}</Text>
+                        <Text style={styles.restLabel}>{isOvertime ? 'Перерыв!' : 'Отдых'}</Text>
+                        <Text style={[
+                          styles.restCountdown,
+                          isOvertime && { color: colors.error },
+                        ]}>
+                          {isOvertime
+                            ? `-${formatTime(Math.abs(restTimer.remaining))}`
+                            : formatTime(restTimer.remaining)}
+                        </Text>
+                        <TouchableOpacity onPress={() => handleAddTime(ex.id, 30)} style={styles.addTimeButton}>
+                          <Text style={styles.addTimeText}>+30с</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleAddTime(ex.id, 60)} style={styles.addTimeButton}>
+                          <Text style={styles.addTimeText}>+1м</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleAddTime(ex.id, 120)} style={styles.addTimeButton}>
+                          <Text style={styles.addTimeText}>+2м</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleSkipRest(ex.id)} style={styles.skipRestButton}>
                           <Text style={styles.skipRestText}>Пропустить</Text>
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.restProgressBg}>
-                        <View
-                          style={[
-                            styles.restProgressFill,
-                            { width: `${getRestProgress(ex.id) * 100}%` },
-                          ]}
-                        />
-                      </View>
+                      {!isOvertime && (
+                        <View style={styles.restProgressBg}>
+                          <View
+                            style={[
+                              styles.restProgressFill,
+                              { width: `${getRestProgress(ex.id) * 100}%` },
+                            ]}
+                          />
+                        </View>
+                      )}
                     </View>
                   )}
 
@@ -411,318 +474,335 @@ export default function StartWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 40,
-    color: colors.textSecondary,
-  },
-  timerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  cancelText: {
-    fontSize: 15,
-    color: colors.error,
-    fontWeight: '600',
-  },
-  timerText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.workout,
-    fontVariant: ['tabular-nums'],
-  },
-  finishButton: {
-    backgroundColor: colors.workout,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  finishText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  exerciseBlock: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  exerciseMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-    gap: 8,
-  },
-  muscleSubtext: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  exerciseTimer: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.workout,
-    fontVariant: ['tabular-nums'],
-  },
-  detailButton: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.workoutLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  detailIcon: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.workout,
-    fontStyle: 'italic',
-  },
-  infoButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  infoIcon: {
-    fontSize: 14,
-    color: colors.workout,
-  },
-  settingsButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-  },
-  settingsIcon: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  removeExercise: {
-    fontSize: 18,
-    color: colors.error,
-    paddingLeft: 10,
-  },
-  gifPanel: {
-    width: '100%',
-    height: 180,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  inlineGif: {
-    width: '100%',
-    height: '100%',
-  },
-  setsContainer: {
-    paddingTop: 4,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  setsHeaderText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  // Rest timer
-  restBar: {
-    backgroundColor: 'rgba(162, 155, 254, 0.08)',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  restBarContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  restLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  restCountdown: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.workout,
-    fontVariant: ['tabular-nums'],
-    flex: 1,
-  },
-  skipRestButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: colors.workoutLight,
-    borderRadius: 8,
-  },
-  skipRestText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.workout,
-  },
-  restProgressBg: {
-    height: 3,
-    backgroundColor: colors.border,
-  },
-  restProgressFill: {
-    height: 3,
-    backgroundColor: colors.workout,
-  },
-  restDurationInfo: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  restDurationText: {
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  addSetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 15,
-    color: colors.text,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  inputSeparator: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  addSetButton: {
-    backgroundColor: colors.workoutLight,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  addSetText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.workout,
-  },
-  addExerciseButton: {
-    borderWidth: 2,
-    borderColor: colors.workout,
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  addExerciseText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.workout,
-  },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    width: 260,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 14,
-  },
-  modalOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 4,
-    alignItems: 'center',
-  },
-  modalOptionSelected: {
-    backgroundColor: colors.workoutLight,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  modalOptionTextSelected: {
-    color: colors.workout,
-    fontWeight: '700',
-  },
-  modalCancel: {
-    marginTop: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    loadingText: {
+      textAlign: 'center',
+      marginTop: 40,
+      color: c.textSecondary,
+    },
+    timerBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      backgroundColor: c.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    cancelText: {
+      fontSize: 15,
+      color: c.error,
+      fontWeight: '600',
+    },
+    timerText: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: c.workout,
+      fontVariant: ['tabular-nums'],
+    },
+    finishButton: {
+      backgroundColor: c.workout,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 16,
+    },
+    finishText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: 20,
+      paddingBottom: 40,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      padding: 40,
+    },
+    emptyText: {
+      fontSize: 15,
+      color: c.textSecondary,
+      textAlign: 'center',
+    },
+    exerciseBlock: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      marginBottom: 12,
+      overflow: 'hidden',
+    },
+    exerciseHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    exerciseInfo: {
+      flex: 1,
+    },
+    exerciseName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+    },
+    exerciseMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 2,
+      gap: 8,
+    },
+    muscleSubtext: {
+      fontSize: 12,
+      color: c.textSecondary,
+    },
+    exerciseTimer: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.workout,
+      fontVariant: ['tabular-nums'],
+    },
+    detailButton: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: c.workoutLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 8,
+    },
+    detailIcon: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.workout,
+      fontStyle: 'italic',
+    },
+    infoButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    infoIcon: {
+      fontSize: 14,
+      color: c.workout,
+    },
+    settingsButton: {
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+    },
+    settingsIcon: {
+      fontSize: 16,
+      color: c.textSecondary,
+    },
+    removeExercise: {
+      fontSize: 18,
+      color: c.error,
+      paddingLeft: 10,
+    },
+    gifPanel: {
+      width: '100%',
+      height: 180,
+      backgroundColor: c.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    inlineGif: {
+      width: '100%',
+      height: '100%',
+    },
+    setsContainer: {
+      paddingTop: 4,
+    },
+    setsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    setsHeaderText: {
+      fontSize: 11,
+      color: c.textSecondary,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    },
+    // Rest timer
+    restBar: {
+      backgroundColor: 'rgba(162, 155, 254, 0.08)',
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    restBarOvertime: {
+      backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    },
+    restBarContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    restLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    restCountdown: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: c.workout,
+      fontVariant: ['tabular-nums'],
+      flex: 1,
+    },
+    skipRestButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: c.workoutLight,
+      borderRadius: 8,
+    },
+    skipRestText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.workout,
+    },
+    addTimeButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      backgroundColor: c.workoutLight,
+      borderRadius: 6,
+    },
+    addTimeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    restProgressBg: {
+      height: 3,
+      backgroundColor: c.border,
+    },
+    restProgressFill: {
+      height: 3,
+      backgroundColor: c.workout,
+    },
+    restDurationInfo: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    restDurationText: {
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    addSetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      gap: 6,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: c.background,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 15,
+      color: c.text,
+      textAlign: 'center',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    inputSeparator: {
+      fontSize: 16,
+      color: c.textSecondary,
+    },
+    addSetButton: {
+      backgroundColor: c.workoutLight,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    addSetText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    addExerciseButton: {
+      borderWidth: 2,
+      borderColor: c.workout,
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    addExerciseText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: c.workout,
+    },
+    // Modal
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 20,
+      width: 260,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: 14,
+    },
+    modalOption: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      marginBottom: 4,
+      alignItems: 'center',
+    },
+    modalOptionSelected: {
+      backgroundColor: c.workoutLight,
+    },
+    modalOptionText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: c.text,
+      fontVariant: ['tabular-nums'],
+    },
+    modalOptionTextSelected: {
+      color: c.workout,
+      fontWeight: '700',
+    },
+    modalCancel: {
+      marginTop: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    modalCancelText: {
+      fontSize: 15,
+      color: c.textSecondary,
+      fontWeight: '600',
+    },
+  });
+}

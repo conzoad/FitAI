@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface Props {
   value: number;
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export default function MacroCircle({ value, target, label, color, size = 76 }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const strokeWidth = 7;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -51,24 +54,26 @@ export default function MacroCircle({ value, target, label, color, size = 76 }: 
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  value: {
-    position: 'absolute',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 6,
-  },
-  target: {
-    fontSize: 10,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    container: {
+      alignItems: 'center',
+    },
+    value: {
+      position: 'absolute',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginTop: 6,
+    },
+    target: {
+      fontSize: 10,
+      color: c.textMuted,
+      marginTop: 1,
+    },
+  });
+}

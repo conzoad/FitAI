@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WorkoutSession } from '../models/types';
-import { colors } from '../theme/colors';
+import { darkColors } from '../theme/colors';
+import { useColors } from '../theme/useColors';
 
 interface WorkoutCardProps {
   session: WorkoutSession;
@@ -9,6 +10,8 @@ interface WorkoutCardProps {
 }
 
 export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
+  const colors = useColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const exerciseCount = session.exercises.length;
   const totalSets = session.exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => !s.isWarmup).length, 0);
 
@@ -71,93 +74,95 @@ export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  accentBar: {
-    width: 4,
-    backgroundColor: colors.workout,
-  },
-  body: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: colors.workoutLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  icon: {
-    fontSize: 18,
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  time: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  exercises: {
-    marginBottom: 14,
-  },
-  exerciseName: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 3,
-    lineHeight: 20,
-  },
-  moreText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 12,
-    alignItems: 'center',
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: colors.border,
-  },
-  statValue: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.workout,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-    letterSpacing: 0.3,
-  },
-});
+function getStyles(c: typeof darkColors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    accentBar: {
+      width: 4,
+      backgroundColor: c.workout,
+    },
+    body: {
+      flex: 1,
+      padding: 16,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    iconContainer: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      backgroundColor: c.workoutLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    icon: {
+      fontSize: 18,
+    },
+    headerInfo: {
+      flex: 1,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: c.text,
+    },
+    time: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    exercises: {
+      marginBottom: 14,
+    },
+    exerciseName: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginBottom: 3,
+      lineHeight: 20,
+    },
+    moreText: {
+      fontSize: 13,
+      color: c.textMuted,
+      fontStyle: 'italic',
+    },
+    statsRow: {
+      flexDirection: 'row',
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingTop: 12,
+      alignItems: 'center',
+    },
+    stat: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statDivider: {
+      width: 1,
+      height: 24,
+      backgroundColor: c.border,
+    },
+    statValue: {
+      fontSize: 17,
+      fontWeight: '800',
+      color: c.workout,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+      letterSpacing: 0.3,
+    },
+  });
+}
