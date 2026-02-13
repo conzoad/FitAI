@@ -11,8 +11,8 @@ interface Props {
   size?: number;
 }
 
-export default function MacroCircle({ value, target, label, color, size = 70 }: Props) {
-  const strokeWidth = 6;
+export default function MacroCircle({ value, target, label, color, size = 76 }: Props) {
+  const strokeWidth = 7;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const percentage = target > 0 ? Math.min(value / target, 1) : 0;
@@ -26,7 +26,7 @@ export default function MacroCircle({ value, target, label, color, size = 70 }: 
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={colors.border}
+            stroke={color + '20'}
             strokeWidth={strokeWidth}
             fill="none"
           />
@@ -43,9 +43,10 @@ export default function MacroCircle({ value, target, label, color, size = 70 }: 
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
           />
         </Svg>
-        <Text style={styles.value}>{Math.round(value)}г</Text>
+        <Text style={[styles.value, { color }]}>{Math.round(value)}г</Text>
       </View>
       <Text style={styles.label}>{label}</Text>
+      <Text style={styles.target}>из {Math.round(target)}г</Text>
     </View>
   );
 }
@@ -56,13 +57,18 @@ const styles = StyleSheet.create({
   },
   value: {
     position: 'absolute',
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
   label: {
     fontSize: 12,
+    fontWeight: '600',
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: 6,
+  },
+  target: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 1,
   },
 });

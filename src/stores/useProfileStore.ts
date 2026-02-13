@@ -38,6 +38,7 @@ const DEFAULT_PROFILE: UserProfile = {
 
 interface ProfileState {
   profile: UserProfile;
+  _hasHydrated: boolean;
   setProfile: (partial: Partial<UserProfile>) => void;
   calculateTargets: () => void;
   resetProfile: () => void;
@@ -49,6 +50,7 @@ export const useProfileStore = create<ProfileState>()(
   persist(
     (set, get) => ({
       profile: { ...DEFAULT_PROFILE },
+      _hasHydrated: false,
 
       setProfile: (partial) =>
         set((state) => ({
@@ -120,6 +122,9 @@ export const useProfileStore = create<ProfileState>()(
     {
       name: 'profile-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => () => {
+        useProfileStore.setState({ _hasHydrated: true });
+      },
     }
   )
 );

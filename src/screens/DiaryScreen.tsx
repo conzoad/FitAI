@@ -46,9 +46,23 @@ export default function DiaryScreen() {
         <Text style={styles.dailyCalories}>
           {Math.round(entry.totalMacros.calories)} ккал
         </Text>
-        <Text style={styles.dailyMacros}>
-          Б:{Math.round(entry.totalMacros.proteins)}г  Ж:{Math.round(entry.totalMacros.fats)}г  У:{Math.round(entry.totalMacros.carbs)}г
-        </Text>
+        <View style={styles.dailyMacrosRow}>
+          <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
+            <Text style={[styles.macroText, { color: colors.proteins }]}>
+              Б:{Math.round(entry.totalMacros.proteins)}г
+            </Text>
+          </View>
+          <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
+            <Text style={[styles.macroText, { color: colors.fats }]}>
+              Ж:{Math.round(entry.totalMacros.fats)}г
+            </Text>
+          </View>
+          <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
+            <Text style={[styles.macroText, { color: colors.carbs }]}>
+              У:{Math.round(entry.totalMacros.carbs)}г
+            </Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -95,30 +109,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.text,
     paddingHorizontal: 20,
     paddingTop: 16,
+    letterSpacing: -0.3,
   },
   dailyTotal: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 14,
     backgroundColor: colors.surface,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   dailyCalories: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.calories,
+    letterSpacing: -0.5,
   },
-  dailyMacros: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
+  dailyMacrosRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 8,
+  },
+  macroPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  macroText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   scroll: {
     flex: 1,
@@ -132,8 +159,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 10,
   },
 });

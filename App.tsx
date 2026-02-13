@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,21 +8,53 @@ import { useProfileStore } from './src/stores/useProfileStore';
 import { useAuthStore } from './src/stores/useAuthStore';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AuthScreen from './src/screens/AuthScreen';
+import { colors } from './src/theme/colors';
+import { loadFromFirestoreIfEmpty, startSyncListeners } from './src/services/firestoreSync';
 
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const uid = useAuthStore((s) => s.user?.uid);
   const isOnboarded = useProfileStore((s) => s.profile.isOnboarded);
+  const hasHydrated = useProfileStore((s) => s._hasHydrated);
+  const syncCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const unsubscribe = useAuthStore.getState()._initAuthListener();
     return unsubscribe;
   }, []);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isAuthenticated || !hasHydrated || !uid) {
+      if (syncCleanupRef.current) {
+        syncCleanupRef.current();
+        syncCleanupRef.current = null;
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      await loadFromFirestoreIfEmpty(uid);
+      if (!cancelled) {
+        syncCleanupRef.current = startSyncListeners(uid);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (syncCleanupRef.current) {
+        syncCleanupRef.current();
+        syncCleanupRef.current = null;
+      }
+    };
+  }, [isAuthenticated, hasHydrated, uid]);
+
+  if (isLoading || !hasHydrated) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFA' }}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -30,7 +62,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         {!isAuthenticated ? (
           <AuthScreen />
         ) : isOnboarded ? (

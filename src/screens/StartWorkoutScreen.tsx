@@ -9,12 +9,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { WorkoutStackParamList } from '../models/types';
+import { getExerciseById } from '../services/exerciseDatabase';
 import SetRow from '../components/SetRow';
 import { colors } from '../theme/colors';
 
@@ -33,6 +36,11 @@ export default function StartWorkoutScreen() {
   const [timer, setTimer] = useState(0);
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
   const [repsInputs, setRepsInputs] = useState<Record<string, string>>({});
+  const [showGif, setShowGif] = useState<Record<string, boolean>>({});
+
+  const toggleGif = (exerciseId: string) => {
+    setShowGif((prev) => ({ ...prev, [exerciseId]: !prev[exerciseId] }));
+  };
 
   useEffect(() => {
     if (!activeWorkout) {
@@ -131,63 +139,83 @@ export default function StartWorkoutScreen() {
               <Text style={styles.emptyText}>Добавьте упражнения из каталога</Text>
             </View>
           ) : (
-            activeWorkout.exercises.map((ex) => (
-              <View key={ex.id} style={styles.exerciseBlock}>
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
-                  <TouchableOpacity onPress={() => removeExercise(ex.id)}>
-                    <Text style={styles.removeExercise}>✕</Text>
-                  </TouchableOpacity>
-                </View>
+            activeWorkout.exercises.map((ex) => {
+              const exerciseData = getExerciseById(ex.exerciseId);
+              const gifUrl = exerciseData?.gifUrl;
 
-                {ex.sets.length > 0 && (
-                  <View style={styles.setsContainer}>
-                    <View style={styles.setsHeader}>
-                      <Text style={styles.setsHeaderText}>Подход</Text>
-                      <Text style={styles.setsHeaderText}>Вес × Повт.</Text>
-                      <Text style={styles.setsHeaderText}>Объём</Text>
-                    </View>
-                    {ex.sets.map((s, idx) => (
-                      <SetRow
-                        key={s.id}
-                        set={s}
-                        index={idx + 1}
-                        editable
-                        onRemove={() => removeSet(ex.id, s.id)}
-                      />
-                    ))}
+              return (
+                <View key={ex.id} style={styles.exerciseBlock}>
+                  <View style={styles.exerciseHeader}>
+                    <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                    {gifUrl && (
+                      <TouchableOpacity onPress={() => toggleGif(ex.id)} style={styles.infoButton}>
+                        <Text style={styles.infoIcon}>{showGif[ex.id] ? '▲' : '▼'}</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={() => removeExercise(ex.id)}>
+                      <Text style={styles.removeExercise}>✕</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
 
-                <View style={styles.addSetRow}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Вес"
-                    keyboardType="decimal-pad"
-                    value={weightInputs[ex.id] || ''}
-                    onChangeText={(t) =>
-                      setWeightInputs((prev) => ({ ...prev, [ex.id]: t }))
-                    }
-                  />
-                  <Text style={styles.inputSeparator}>×</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Повт."
-                    keyboardType="number-pad"
-                    value={repsInputs[ex.id] || ''}
-                    onChangeText={(t) =>
-                      setRepsInputs((prev) => ({ ...prev, [ex.id]: t }))
-                    }
-                  />
-                  <TouchableOpacity
-                    style={styles.addSetButton}
-                    onPress={() => handleAddSet(ex.id)}
-                  >
-                    <Text style={styles.addSetText}>+ Подход</Text>
-                  </TouchableOpacity>
+                  {showGif[ex.id] && gifUrl && (
+                    <View style={styles.gifPanel}>
+                      <Image
+                        source={{ uri: gifUrl }}
+                        style={styles.inlineGif}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  )}
+
+                  {ex.sets.length > 0 && (
+                    <View style={styles.setsContainer}>
+                      <View style={styles.setsHeader}>
+                        <Text style={styles.setsHeaderText}>Подход</Text>
+                        <Text style={styles.setsHeaderText}>Вес × Повт.</Text>
+                        <Text style={styles.setsHeaderText}>Объём</Text>
+                      </View>
+                      {ex.sets.map((s, idx) => (
+                        <SetRow
+                          key={s.id}
+                          set={s}
+                          index={idx + 1}
+                          editable
+                          onRemove={() => removeSet(ex.id, s.id)}
+                        />
+                      ))}
+                    </View>
+                  )}
+
+                  <View style={styles.addSetRow}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Вес"
+                      keyboardType="decimal-pad"
+                      value={weightInputs[ex.id] || ''}
+                      onChangeText={(t) =>
+                        setWeightInputs((prev) => ({ ...prev, [ex.id]: t }))
+                      }
+                    />
+                    <Text style={styles.inputSeparator}>×</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Повт."
+                      keyboardType="number-pad"
+                      value={repsInputs[ex.id] || ''}
+                      onChangeText={(t) =>
+                        setRepsInputs((prev) => ({ ...prev, [ex.id]: t }))
+                      }
+                    />
+                    <TouchableOpacity
+                      style={styles.addSetButton}
+                      onPress={() => handleAddSet(ex.id)}
+                    >
+                      <Text style={styles.addSetText}>+ Подход</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
 
           <TouchableOpacity
@@ -280,10 +308,31 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
   },
+  infoButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  infoIcon: {
+    fontSize: 14,
+    color: colors.workout,
+  },
   removeExercise: {
     fontSize: 18,
     color: colors.error,
     paddingLeft: 10,
+  },
+  gifPanel: {
+    width: '100%',
+    height: 180,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  inlineGif: {
+    width: '100%',
+    height: '100%',
   },
   setsContainer: {
     paddingTop: 4,

@@ -111,6 +111,27 @@ export type MuscleGroup =
   | 'cardio'
   | 'fullBody';
 
+export type MuscleId =
+  | 'chest'
+  | 'upperBack'
+  | 'lats'
+  | 'shoulders'
+  | 'frontDelts'
+  | 'sideDelts'
+  | 'rearDelts'
+  | 'biceps'
+  | 'triceps'
+  | 'forearms'
+  | 'abs'
+  | 'obliques'
+  | 'lowerBack'
+  | 'quads'
+  | 'hamstrings'
+  | 'glutes'
+  | 'calves'
+  | 'hip-flexors'
+  | 'cardio';
+
 export interface Exercise {
   id: string;
   name: string;
@@ -119,6 +140,10 @@ export interface Exercise {
   description: string;
   isCompound: boolean;
   gifUrl?: string;
+  targetMuscles?: {
+    primary: MuscleId[];
+    secondary: MuscleId[];
+  };
 }
 
 export interface WorkoutSet {

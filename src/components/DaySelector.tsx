@@ -11,7 +11,7 @@ interface Props {
 }
 
 const DAYS = getDaysArray(30);
-const ITEM_WIDTH = 52;
+const ITEM_WIDTH = 56;
 
 export default function DaySelector({ selectedDate, onSelect }: Props) {
   const scrollRef = useRef<ScrollView>(null);
@@ -44,7 +44,11 @@ export default function DaySelector({ selectedDate, onSelect }: Props) {
         return (
           <TouchableOpacity
             key={key}
-            style={[styles.item, isSelected && styles.selected]}
+            style={[
+              styles.item,
+              isSelected && styles.selected,
+              isToday && !isSelected && styles.today,
+            ]}
             onPress={() => onSelect(key)}
             activeOpacity={0.7}
           >
@@ -64,32 +68,46 @@ export default function DaySelector({ selectedDate, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
   },
   item: {
     width: ITEM_WIDTH - 8,
-    height: 64,
-    borderRadius: 12,
+    height: 68,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   selected: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  today: {
+    borderColor: colors.primaryLight,
+    borderWidth: 1.5,
   },
   weekday: {
     fontSize: 11,
-    color: colors.textSecondary,
+    fontWeight: '500',
+    color: colors.textMuted,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   selectedText: {
     color: '#FFFFFF',
   },
   day: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
     marginTop: 2,
   },
@@ -97,7 +115,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: colors.primary,
-    marginTop: 3,
+    backgroundColor: colors.primaryLight,
+    marginTop: 4,
   },
 });

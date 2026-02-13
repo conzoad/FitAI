@@ -7,6 +7,7 @@ import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
 import { MUSCLE_GROUP_LABELS } from '../utils/constants';
 import WorkoutProgressChart from '../components/WorkoutProgressChart';
+import MuscleMapDiagram from '../components/MuscleMapDiagram';
 import { colors } from '../theme/colors';
 
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseDetail'>;
@@ -102,6 +103,16 @@ export default function ExerciseDetailScreen() {
         )}
 
         <Text style={styles.description}>{exercise.description}</Text>
+
+        {exercise.targetMuscles && (
+          <>
+            <Text style={styles.sectionTitle}>Задействованные мышцы</Text>
+            <MuscleMapDiagram
+              primary={exercise.targetMuscles.primary}
+              secondary={exercise.targetMuscles.secondary}
+            />
+          </>
+        )}
 
         {personalRecord && (
           <View style={styles.prCard}>

@@ -116,7 +116,9 @@ export default function WorkoutsScreen() {
           <View style={styles.programsHeader}>
             <Text style={styles.programsTitle}>Мои программы</Text>
             <TouchableOpacity onPress={() => navigation.navigate('CreateProgram')}>
-              <Text style={styles.addProgramText}>+ Создать</Text>
+              <View style={styles.addProgramBadge}>
+                <Text style={styles.addProgramText}>+ Создать</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -192,19 +194,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 14,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.text,
+    letterSpacing: -0.3,
   },
   startButton: {
     backgroundColor: colors.workout,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
     borderRadius: 20,
+    shadowColor: colors.workout,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   startButtonText: {
     color: '#FFFFFF',
@@ -215,24 +223,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: colors.workout,
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     marginTop: 4,
+    letterSpacing: 0.3,
   },
   buttonsRow: {
     paddingHorizontal: 20,
@@ -241,9 +253,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   catalogIcon: {
     fontSize: 20,
@@ -257,7 +271,7 @@ const styles = StyleSheet.create({
   },
   catalogArrow: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   // Programs
   programsSection: {
@@ -268,48 +282,59 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   programsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
   },
+  addProgramBadge: {
+    backgroundColor: 'rgba(162, 155, 254, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
   addProgramText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.workout,
   },
   noProgramsCard: {
     backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   noProgramsText: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textAlign: 'center',
+    lineHeight: 19,
   },
   programCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   programInfo: {
     flex: 1,
   },
   programName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   programMeta: {
     fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: 3,
   },
   programActions: {
     flexDirection: 'row',
@@ -318,9 +343,14 @@ const styles = StyleSheet.create({
   },
   programStartBtn: {
     backgroundColor: colors.workout,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 14,
+    shadowColor: colors.workout,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   programStartText: {
     color: '#FFFFFF',
@@ -330,7 +360,7 @@ const styles = StyleSheet.create({
   programDeleteBtn: {
     fontSize: 16,
     color: colors.error,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
   },
   sectionHeader: {
     fontSize: 14,

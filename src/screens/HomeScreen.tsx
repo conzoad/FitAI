@@ -46,10 +46,12 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.greeting}>
-          Привет, {profile.name || 'друг'}!
-        </Text>
-        <Text style={styles.date}>{formatDateRussian(new Date())}</Text>
+        <View style={styles.greetingCard}>
+          <Text style={styles.greeting}>
+            Привет, {profile.name || 'друг'}! 👋
+          </Text>
+          <Text style={styles.date}>{formatDateRussian(new Date())}</Text>
+        </View>
 
         <View style={styles.ringContainer}>
           <GoalProgressRing
@@ -70,13 +72,15 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Последние приёмы пищи</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
-            <Text style={styles.statsLink}>Статистика</Text>
+            <View style={styles.statsLinkBadge}>
+              <Text style={styles.statsLink}>Статистика →</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
         {lastMeals.length > 0 ? (
           lastMeals.map((meal) => (
-            <MealCard key={meal.id} meal={meal} onPress={() => {}} />
+            <MealCard key={meal.id} meal={meal} onPress={() => { }} />
           ))
         ) : (
           <EmptyState
@@ -94,40 +98,52 @@ export default function HomeScreen() {
         {todayWorkouts.length > 0 ? (
           todayWorkouts.map((session) => (
             <View key={session.id} style={styles.workoutCard}>
-              <View style={styles.workoutHeader}>
-                <Text style={styles.workoutIcon}>🏋️</Text>
-                <View style={styles.workoutInfo}>
-                  <Text style={styles.workoutTitle}>Тренировка сегодня</Text>
-                  <Text style={styles.workoutMeta}>
-                    {session.exercises.length} упр. · {session.duration} мин ·{' '}
-                    {session.totalVolume >= 1000
-                      ? `${(session.totalVolume / 1000).toFixed(1)}т`
-                      : `${session.totalVolume}кг`}
-                  </Text>
+              <View style={styles.workoutAccent} />
+              <View style={styles.workoutBody}>
+                <View style={styles.workoutHeader}>
+                  <View style={styles.workoutIconCircle}>
+                    <Text style={styles.workoutIcon}>🏋️</Text>
+                  </View>
+                  <View style={styles.workoutInfo}>
+                    <Text style={styles.workoutTitle}>Тренировка сегодня</Text>
+                    <Text style={styles.workoutMeta}>
+                      {session.exercises.length} упр. · {session.duration} мин ·{' '}
+                      {session.totalVolume >= 1000
+                        ? `${(session.totalVolume / 1000).toFixed(1)}т`
+                        : `${session.totalVolume}кг`}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
           ))
         ) : lastWorkout ? (
           <View style={styles.workoutCard}>
-            <View style={styles.workoutHeader}>
-              <Text style={styles.workoutIcon}>🏋️</Text>
-              <View style={styles.workoutInfo}>
-                <Text style={styles.workoutTitle}>Последняя тренировка</Text>
-                <Text style={styles.workoutMeta}>
-                  {lastWorkout.exercises.length} упр. · {lastWorkout.duration} мин ·{' '}
-                  {lastWorkout.totalVolume >= 1000
-                    ? `${(lastWorkout.totalVolume / 1000).toFixed(1)}т`
-                    : `${lastWorkout.totalVolume}кг`}
-                </Text>
+            <View style={styles.workoutAccent} />
+            <View style={styles.workoutBody}>
+              <View style={styles.workoutHeader}>
+                <View style={styles.workoutIconCircle}>
+                  <Text style={styles.workoutIcon}>🏋️</Text>
+                </View>
+                <View style={styles.workoutInfo}>
+                  <Text style={styles.workoutTitle}>Последняя тренировка</Text>
+                  <Text style={styles.workoutMeta}>
+                    {lastWorkout.exercises.length} упр. · {lastWorkout.duration} мин ·{' '}
+                    {lastWorkout.totalVolume >= 1000
+                      ? `${(lastWorkout.totalVolume / 1000).toFixed(1)}т`
+                      : `${lastWorkout.totalVolume}кг`}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         ) : (
           <View style={styles.workoutCard}>
-            <Text style={styles.noWorkoutText}>
-              Нет тренировок. Перейдите на вкладку "Трениров." чтобы начать!
-            </Text>
+            <View style={styles.workoutBody}>
+              <Text style={styles.noWorkoutText}>
+                Нет тренировок. Перейдите на вкладку "Трениров." чтобы начать!
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -147,68 +163,100 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  greetingCard: {
+    marginBottom: 6,
+  },
   greeting: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.text,
+    letterSpacing: -0.5,
   },
   date: {
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   ringContainer: {
     alignItems: 'center',
     marginVertical: 10,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: 24,
+    marginBottom: 14,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
+    letterSpacing: -0.2,
+  },
+  statsLinkBadge: {
+    backgroundColor: 'rgba(108, 92, 231, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   statsLink: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   workoutCard: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  workoutAccent: {
+    width: 4,
+    backgroundColor: colors.workout,
+  },
+  workoutBody: {
+    flex: 1,
+    padding: 14,
   },
   workoutHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
+  workoutIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.workoutLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   workoutIcon: {
-    fontSize: 24,
+    fontSize: 18,
   },
   workoutInfo: {
     flex: 1,
   },
   workoutTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   workoutMeta: {
     fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 3,
   },
   noWorkoutText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textAlign: 'center',
+    paddingVertical: 8,
   },
 });

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { Exercise } from '../models/types';
 import { MUSCLE_GROUP_LABELS, MUSCLE_GROUP_ICONS } from '../utils/constants';
 import { colors } from '../theme/colors';
@@ -10,10 +10,30 @@ interface ExerciseCardProps {
 }
 
 export default function ExerciseCard({ exercise, onPress }: ExerciseCardProps) {
+  const [gifLoading, setGifLoading] = useState(true);
+  const [gifError, setGifError] = useState(false);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>{MUSCLE_GROUP_ICONS[exercise.muscleGroup] || '💪'}</Text>
+        {exercise.gifUrl && !gifError ? (
+          <>
+            {gifLoading && (
+              <View style={styles.gifLoading}>
+                <ActivityIndicator size="small" color={colors.workout} />
+              </View>
+            )}
+            <Image
+              source={{ uri: exercise.gifUrl }}
+              style={styles.thumbnailGif}
+              resizeMode="cover"
+              onLoad={() => setGifLoading(false)}
+              onError={() => { setGifLoading(false); setGifError(true); }}
+            />
+          </>
+        ) : (
+          <Text style={styles.icon}>{MUSCLE_GROUP_ICONS[exercise.muscleGroup] || '💪'}</Text>
+        )}
       </View>
       <View style={styles.info}>
         <Text style={styles.name}>{exercise.name}</Text>
@@ -35,9 +55,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   iconContainer: {
     width: 44,
@@ -47,6 +69,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  gifLoading: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  thumbnailGif: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   icon: {
     fontSize: 20,

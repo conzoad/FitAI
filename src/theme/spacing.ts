@@ -6,3 +6,12 @@ export const spacing = {
   xl: 32,
   xxl: 48,
 };
+
+export const radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  full: 999,
+};

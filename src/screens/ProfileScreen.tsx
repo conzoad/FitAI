@@ -161,27 +161,36 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
     ]);
   };
 
+  const initials = (name || 'U').charAt(0).toUpperCase();
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>
-          {isOnboarding ? 'Добро пожаловать!' : 'Профиль'}
-        </Text>
-        {isOnboarding && (
-          <Text style={styles.subtitle}>
-            Расскажите о себе, чтобы мы рассчитали вашу норму КБЖУ
+        {/* Avatar & Header */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+          <Text style={styles.title}>
+            {isOnboarding ? 'Добро пожаловать!' : name || 'Профиль'}
           </Text>
-        )}
+          {isOnboarding && (
+            <Text style={styles.subtitle}>
+              Расскажите о себе, чтобы мы рассчитали вашу норму КБЖУ
+            </Text>
+          )}
+        </View>
 
-        <Text style={styles.label}>Имя</Text>
+        <Text style={styles.label}>ИМЯ</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
           placeholder="Ваше имя"
+          placeholderTextColor={colors.textMuted}
         />
 
-        <Text style={styles.label}>Пол</Text>
+        <Text style={styles.label}>ПОЛ</Text>
         <View style={styles.row}>
           {genders.map((g) => (
             <TouchableOpacity
@@ -198,38 +207,41 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
 
         <View style={styles.rowInputs}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Возраст</Text>
+            <Text style={styles.label}>ВОЗРАСТ</Text>
             <TextInput
               style={styles.input}
               value={age}
               onChangeText={setAge}
               keyboardType="numeric"
               placeholder="25"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Рост (см)</Text>
+            <Text style={styles.label}>РОСТ (СМ)</Text>
             <TextInput
               style={styles.input}
               value={height}
               onChangeText={setHeight}
               keyboardType="numeric"
               placeholder="175"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Вес (кг)</Text>
+            <Text style={styles.label}>ВЕС (КГ)</Text>
             <TextInput
               style={styles.input}
               value={weight}
               onChangeText={setWeight}
               keyboardType="numeric"
               placeholder="70"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
         </View>
 
-        <Text style={styles.label}>Цель</Text>
+        <Text style={styles.label}>ЦЕЛЬ</Text>
         <View style={styles.row}>
           {goals.map((g) => (
             <TouchableOpacity
@@ -244,7 +256,7 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
           ))}
         </View>
 
-        <Text style={styles.label}>Уровень активности</Text>
+        <Text style={styles.label}>УРОВЕНЬ АКТИВНОСТИ</Text>
         {activities.map((a) => (
           <TouchableOpacity
             key={a}
@@ -266,21 +278,37 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
         {!isOnboarding && profile.targetCalories > 0 && (
           <View style={styles.targetsCard}>
             <Text style={styles.targetsTitle}>Ваша дневная норма</Text>
-            <Text style={styles.targetItem}>Калории: {profile.targetCalories} ккал</Text>
-            <Text style={styles.targetItem}>Белки: {profile.targetProteins} г</Text>
-            <Text style={styles.targetItem}>Жиры: {profile.targetFats} г</Text>
-            <Text style={styles.targetItem}>Углеводы: {profile.targetCarbs} г</Text>
+            <View style={styles.targetRow}>
+              <View style={styles.targetItem}>
+                <Text style={[styles.targetValue, { color: colors.calories }]}>{profile.targetCalories}</Text>
+                <Text style={styles.targetLabel}>ккал</Text>
+              </View>
+              <View style={styles.targetItem}>
+                <Text style={[styles.targetValue, { color: colors.proteins }]}>{profile.targetProteins}г</Text>
+                <Text style={styles.targetLabel}>белки</Text>
+              </View>
+              <View style={styles.targetItem}>
+                <Text style={[styles.targetValue, { color: colors.fats }]}>{profile.targetFats}г</Text>
+                <Text style={styles.targetLabel}>жиры</Text>
+              </View>
+              <View style={styles.targetItem}>
+                <Text style={[styles.targetValue, { color: colors.carbs }]}>{profile.targetCarbs}г</Text>
+                <Text style={styles.targetLabel}>углев.</Text>
+              </View>
+            </View>
           </View>
         )}
 
         {!isOnboarding && user && (
           <View style={styles.accountSection}>
-            <Text style={styles.accountTitle}>Аккаунт</Text>
+            <Text style={styles.sectionTitle}>Аккаунт</Text>
             <View style={styles.accountCard}>
               <Text style={styles.accountEmail}>{user.email}</Text>
-              <Text style={styles.accountProvider}>
-                {user.provider === 'google' ? 'Google' : 'Email'}
-              </Text>
+              <View style={styles.providerBadge}>
+                <Text style={styles.providerText}>
+                  {user.provider === 'google' ? 'Google' : 'Email'}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutText}>Выйти из аккаунта</Text>
@@ -290,7 +318,7 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
 
         {!isOnboarding && (
           <View style={styles.syncSection}>
-            <Text style={styles.syncTitle}>Google Drive</Text>
+            <Text style={styles.sectionTitle}>Google Drive</Text>
             <Text style={styles.syncDescription}>
               Сохраняйте и восстанавливайте данные через Google Drive
             </Text>
@@ -338,27 +366,55 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.surfaceLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
+  },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text,
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 15,
     color: colors.textSecondary,
-    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: 16,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginTop: 18,
     marginBottom: 8,
+    letterSpacing: 1.2,
   },
   input: {
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 14,
     fontSize: 16,
     color: colors.text,
@@ -378,7 +434,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: colors.surface,
@@ -388,125 +444,158 @@ const styles = StyleSheet.create({
   chipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   chipText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   chipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   activityItem: {
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 6,
   },
   activityActive: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: 'rgba(108, 92, 231, 0.12)',
     borderColor: colors.primary,
   },
   activityText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textSecondary,
   },
   activityTextActive: {
-    color: colors.primaryDark,
-    fontWeight: '600',
+    color: colors.primaryLight,
+    fontWeight: '700',
   },
   saveButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 17,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 28,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   saveText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   targetsCard: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   targetsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 10,
+    marginBottom: 14,
+  },
+  targetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   targetItem: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginBottom: 4,
+    alignItems: 'center',
+  },
+  targetValue: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  targetLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   accountSection: {
-    marginTop: 24,
+    marginTop: 28,
   },
-  accountTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 10,
   },
   accountCard: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   accountEmail: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
+    flex: 1,
   },
-  accountProvider: {
-    fontSize: 13,
+  providerBadge: {
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  providerText: {
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 4,
+    fontWeight: '600',
   },
   logoutButton: {
     marginTop: 12,
     padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 107, 0.2)',
   },
   logoutText: {
-    color: '#DC2626',
+    color: colors.error,
     fontSize: 16,
     fontWeight: '600',
   },
   syncSection: {
     marginTop: 24,
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  syncTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
   },
   syncDescription: {
     fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 12,
+    lineHeight: 19,
   },
   syncLastBackup: {
     fontSize: 12,
-    color: colors.primary,
+    color: colors.success,
     marginBottom: 10,
+    fontWeight: '500',
   },
   syncLoading: {
     flexDirection: 'row',
@@ -528,26 +617,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primaryLight,
-    borderRadius: 10,
+    backgroundColor: 'rgba(108, 92, 231, 0.12)',
+    borderRadius: 12,
     paddingVertical: 12,
     gap: 6,
   },
   syncButtonIcon: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.primaryDark,
+    color: colors.primary,
   },
   syncButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primaryDark,
+    color: colors.primary,
   },
   syncButtonSmall: {
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: colors.background,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceLight,
     justifyContent: 'center',
   },
   syncButtonSmallText: {

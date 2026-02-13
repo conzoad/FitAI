@@ -10,6 +10,10 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { useProfileStore } from './useProfileStore';
+import { useDiaryStore } from './useDiaryStore';
+import { useWorkoutStore } from './useWorkoutStore';
+import { useChatStore } from './useChatStore';
 
 interface AuthUser {
   email: string;
@@ -124,6 +128,10 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   logout: async () => {
     await signOut(auth);
+    useProfileStore.getState().resetProfile();
+    useDiaryStore.setState({ entries: {} });
+    useWorkoutStore.setState({ sessions: {}, activeWorkout: null, programs: [] });
+    useChatStore.getState().clearHistory();
     set({
       user: null,
       isAuthenticated: false,

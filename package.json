@@ -36,6 +36,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "cheerio": "^1.2.0",
+    "puppeteer": "^24.37.2",
     "typescript": "~5.9.2"
   },
   "private": true

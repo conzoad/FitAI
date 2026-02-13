@@ -102,9 +102,12 @@ export default function AuthScreen() {
       >
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           <View style={styles.headerSection}>
-            <Text style={styles.appName}>FitTracker</Text>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoEmoji}>💪</Text>
+            </View>
+            <Text style={styles.appName}>FitAI</Text>
             <Text style={styles.subtitle}>
-              {mode === 'login' ? 'Войдите в аккаунт' : 'Создайте аккаунт'}
+              {mode === 'login' ? 'Добро пожаловать обратно' : 'Создайте аккаунт'}
             </Text>
           </View>
 
@@ -129,37 +132,37 @@ export default function AuthScreen() {
 
           {mode === 'register' && (
             <>
-              <Text style={styles.label}>Имя</Text>
+              <Text style={styles.label}>ИМЯ</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
                 placeholder="Ваше имя"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="words"
               />
             </>
           )}
 
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>EMAIL</Text>
           <TextInput
             style={styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="email@example.com"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
           />
 
-          <Text style={styles.label}>Пароль</Text>
+          <Text style={styles.label}>ПАРОЛЬ</Text>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder={mode === 'register' ? 'Минимум 6 символов' : 'Ваш пароль'}
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textMuted}
             secureTextEntry
           />
 
@@ -212,13 +215,33 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 36,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logoEmoji: {
+    fontSize: 36,
   },
   appName: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '800',
     color: colors.primary,
     marginBottom: 8,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 16,
@@ -227,38 +250,46 @@ const styles = StyleSheet.create({
   modeRow: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 24,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modeTab: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 11,
     alignItems: 'center',
   },
   modeActive: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   modeText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   modeTextActive: {
     color: '#FFFFFF',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 6,
-    marginTop: 12,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginBottom: 8,
+    marginTop: 16,
+    letterSpacing: 1.2,
   },
   input: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
     borderWidth: 1,
@@ -266,10 +297,15 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 17,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 28,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -278,11 +314,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 28,
   },
   dividerLine: {
     flex: 1,
@@ -292,17 +329,17 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 15,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     gap: 10,
   },
   googleIcon: {

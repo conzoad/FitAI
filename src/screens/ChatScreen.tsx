@@ -115,9 +115,17 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>ИИ-помощник</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>🤖</Text>
+          </View>
+          <View>
+            <Text style={styles.title}>ИИ-помощник</Text>
+            <Text style={styles.headerSubtitle}>{isLoading ? 'Печатает...' : 'Онлайн'}</Text>
+          </View>
+        </View>
         {messages.length > 0 && (
-          <TouchableOpacity onPress={clearHistory}>
+          <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
             <Text style={styles.clearText}>Очистить</Text>
           </TouchableOpacity>
         )}
@@ -132,7 +140,9 @@ export default function ChatScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         ListEmptyComponent={
           <View style={styles.emptyChat}>
-            <Text style={styles.emptyIcon}>🤖</Text>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIcon}>🤖</Text>
+            </View>
             <Text style={styles.emptyTitle}>Фитнес-ассистент</Text>
             <Text style={styles.emptySubtitle}>
               Задайте вопрос о питании, тренировках или здоровом образе жизни
@@ -156,6 +166,11 @@ export default function ChatScreen() {
 
       {isLoading && (
         <View style={styles.typingIndicator}>
+          <View style={styles.typingDots}>
+            <View style={[styles.dot, styles.dot1]} />
+            <View style={[styles.dot, styles.dot2]} />
+            <View style={[styles.dot, styles.dot3]} />
+          </View>
           <Text style={styles.typingText}>ИИ печатает...</Text>
         </View>
       )}
@@ -169,7 +184,7 @@ export default function ChatScreen() {
             value={input}
             onChangeText={setInput}
             placeholder="Введите сообщение..."
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textMuted}
             multiline
             maxLength={1000}
           />
@@ -178,7 +193,7 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!input.trim() || isLoading}
           >
-            <Text style={styles.sendText}>→</Text>
+            <Text style={styles.sendText}>↑</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -197,18 +212,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconText: {
+    fontSize: 18,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
   },
+  headerSubtitle: {
+    fontSize: 12,
+    color: colors.success,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  clearButton: {
+    backgroundColor: 'rgba(255, 107, 107, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
   clearText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.error,
+    fontWeight: '600',
   },
   messageList: {
-    paddingVertical: 8,
+    paddingVertical: 12,
     flexGrow: 1,
   },
   emptyChat: {
@@ -218,21 +264,31 @@ const styles = StyleSheet.create({
     padding: 32,
     paddingTop: 80,
   },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 28,
+    backgroundColor: colors.surfaceLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   emptyIcon: {
-    fontSize: 56,
-    marginBottom: 16,
+    fontSize: 40,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: colors.text,
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   emptySubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
+    lineHeight: 21,
   },
   quickActions: {
     gap: 8,
@@ -240,24 +296,41 @@ const styles = StyleSheet.create({
   },
   quickChip: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
   },
   quickText: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.primaryLight,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   typingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingVertical: 8,
+    gap: 8,
   },
+  typingDots: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    opacity: 0.6,
+  },
+  dot1: { opacity: 0.4 },
+  dot2: { opacity: 0.6 },
+  dot3: { opacity: 0.8 },
   typingText: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     fontStyle: 'italic',
   },
   inputContainer: {
@@ -271,28 +344,37 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     fontSize: 15,
     color: colors.text,
     maxHeight: 100,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sendDisabled: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceLight,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   sendText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
   },
 });

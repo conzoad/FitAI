@@ -28,24 +28,33 @@ export default function FoodItemCard({ item, editable = false, onUpdate }: Props
             value={item.amount}
             onChangeText={(v) => onUpdate?.('amount', v)}
             placeholder="Кол-во"
+            placeholderTextColor={colors.textMuted}
           />
         ) : (
           <Text style={styles.amount}>{item.amount}</Text>
         )}
       </View>
       <View style={styles.macros}>
-        <Text style={[styles.macroItem, { color: colors.calories }]}>
-          {Math.round(item.calories)} ккал
-        </Text>
-        <Text style={[styles.macroItem, { color: colors.proteins }]}>
-          Б:{item.proteins}г
-        </Text>
-        <Text style={[styles.macroItem, { color: colors.fats }]}>
-          Ж:{item.fats}г
-        </Text>
-        <Text style={[styles.macroItem, { color: colors.carbs }]}>
-          У:{item.carbs}г
-        </Text>
+        <View style={[styles.macroPill, { backgroundColor: colors.calories + '18' }]}>
+          <Text style={[styles.macroItem, { color: colors.calories }]}>
+            {Math.round(item.calories)} ккал
+          </Text>
+        </View>
+        <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
+          <Text style={[styles.macroItem, { color: colors.proteins }]}>
+            Б:{item.proteins}г
+          </Text>
+        </View>
+        <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
+          <Text style={[styles.macroItem, { color: colors.fats }]}>
+            Ж:{item.fats}г
+          </Text>
+        </View>
+        <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
+          <Text style={[styles.macroItem, { color: colors.carbs }]}>
+            У:{item.carbs}г
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -53,16 +62,18 @@ export default function FoodItemCard({ item, editable = false, onUpdate }: Props
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 10,
-    padding: 12,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   name: {
     fontSize: 15,
@@ -73,6 +84,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   amountInput: {
     fontSize: 14,
@@ -86,10 +98,16 @@ const styles = StyleSheet.create({
   },
   macros: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  macroPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   macroItem: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

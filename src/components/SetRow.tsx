@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   warmupRow: {
-    backgroundColor: '#FFF8E1',
+    backgroundColor: 'rgba(255, 183, 77, 0.08)',
   },
   indexContainer: {
     width: 28,

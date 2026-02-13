@@ -45,6 +45,11 @@ export default function ChatMessage({ message }: Props) {
 
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.assistantContainer]}>
+      {!isUser && (
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>🤖</Text>
+        </View>
+      )}
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
         <Text style={styles.textWrap}>
           {renderFormattedText(message.content, isUser)}
@@ -58,30 +63,55 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
     paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
   },
   userContainer: {
-    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    flexDirection: 'row',
   },
   assistantContainer: {
-    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+  },
+  avatarCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  avatarText: {
+    fontSize: 14,
   },
   bubble: {
-    maxWidth: '80%',
-    borderRadius: 16,
+    maxWidth: '75%',
+    borderRadius: 18,
     padding: 12,
+    paddingHorizontal: 16,
   },
   userBubble: {
     backgroundColor: colors.chatUser,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   assistantBubble: {
     backgroundColor: colors.chatAssistant,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.chatAssistantBorder,
   },
   text: {
     fontSize: 15,
     color: colors.text,
-    lineHeight: 21,
+    lineHeight: 22,
   },
   textWrap: {
     flexDirection: 'row',
@@ -91,6 +121,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   userText: {
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });
