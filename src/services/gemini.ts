@@ -3,18 +3,32 @@ import { FOOD_ANALYSIS_TEXT_PROMPT, FOOD_ANALYSIS_PHOTO_PROMPT, FITNESS_CHAT_SYS
 import { parseNutritionResponse } from './responseParser';
 import { GeminiNutritionResponse, GeminiExerciseResponse } from '../models/types';
 import Constants from 'expo-constants';
+import { useProfileStore } from '../stores/useProfileStore';
 
-const GEMINI_API_KEY = Constants.expoConfig?.extra?.geminiApiKey || '';
 const MODEL_NAME = 'gemini-2.5-flash'; // Обновлено: квота gemini-2.0-flash исчерпана
 
 let _ai: GoogleGenAI | null = null;
+let _currentApiKey: string = '';
+
 function getAI(): GoogleGenAI {
-  if (!_ai) {
-    if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API ключ не настроен.\n\nУкажите GEMINI_API_KEY в файле .env');
-    }
-    _ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  // Проверяем пользовательский ключ
+  const userApiKey = useProfileStore.getState().profile.geminiApiKey;
+  const defaultApiKey = Constants.expoConfig?.extra?.geminiApiKey || '';
+  const apiKey = userApiKey?.trim() || defaultApiKey;
+
+  if (!apiKey) {
+    throw new Error(
+      'Gemini API ключ не настроен.\n\n' +
+      'Укажите свой ключ в Профиле или добавьте GEMINI_API_KEY в .env'
+    );
   }
+
+  // Пересоздаем клиент, если ключ изменился
+  if (!_ai || _currentApiKey !== apiKey) {
+    _ai = new GoogleGenAI({ apiKey });
+    _currentApiKey = apiKey;
+  }
+
   return _ai;
 }
 

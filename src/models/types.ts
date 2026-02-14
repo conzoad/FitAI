@@ -53,6 +53,7 @@ export interface UserProfile {
   targetCarbs: number;
   isOnboarded: boolean;
   weightHistory: WeightEntry[];
+  geminiApiKey?: string;
 }
 
 export interface ChatMessage {

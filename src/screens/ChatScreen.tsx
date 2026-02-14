@@ -229,70 +229,74 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.headerIcon}>
-            <Text style={styles.headerIconText}>🤖</Text>
-          </View>
-          <View>
-            <Text style={styles.title}>ИИ-помощник</Text>
-            <Text style={styles.headerSubtitle}>{isLoading ? 'Печатает...' : 'Онлайн'}</Text>
-          </View>
-        </View>
-        {messages.length > 0 && (
-          <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
-            <Text style={styles.clearText}>Очистить</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ChatMessageComponent message={item} />}
-        contentContainerStyle={styles.messageList}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-        ListEmptyComponent={
-          <View style={styles.emptyChat}>
-            <View style={styles.emptyIconCircle}>
-              <Text style={styles.emptyIcon}>🤖</Text>
-            </View>
-            <Text style={styles.emptyTitle}>Фитнес-ассистент</Text>
-            <Text style={styles.emptySubtitle}>
-              Задайте вопрос о питании, тренировках или здоровом образе жизни
-            </Text>
-            <View style={styles.quickActions}>
-              {quickActions.map((action) => (
-                <TouchableOpacity
-                  key={action}
-                  style={styles.quickChip}
-                  onPress={() => {
-                    setInput(action);
-                  }}
-                >
-                  <Text style={styles.quickText}>{action}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        }
-      />
-
-      {isLoading && (
-        <View style={styles.typingIndicator}>
-          <View style={styles.typingDots}>
-            <View style={[styles.dot, styles.dot1]} />
-            <View style={[styles.dot, styles.dot2]} />
-            <View style={[styles.dot, styles.dot3]} />
-          </View>
-          <Text style={styles.typingText}>ИИ печатает...</Text>
-        </View>
-      )}
-
       <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerIcon}>
+              <Text style={styles.headerIconText}>🤖</Text>
+            </View>
+            <View>
+              <Text style={styles.title}>ИИ-помощник</Text>
+              <Text style={styles.headerSubtitle}>{isLoading ? 'Печатает...' : 'Онлайн'}</Text>
+            </View>
+          </View>
+          {messages.length > 0 && (
+            <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
+              <Text style={styles.clearText}>Очистить</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ChatMessageComponent message={item} />}
+          contentContainerStyle={styles.messageList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <View style={styles.emptyChat}>
+              <View style={styles.emptyIconCircle}>
+                <Text style={styles.emptyIcon}>🤖</Text>
+              </View>
+              <Text style={styles.emptyTitle}>Фитнес-ассистент</Text>
+              <Text style={styles.emptySubtitle}>
+                Задайте вопрос о питании, тренировках или здоровом образе жизни
+              </Text>
+              <View style={styles.quickActions}>
+                {quickActions.map((action) => (
+                  <TouchableOpacity
+                    key={action}
+                    style={styles.quickChip}
+                    onPress={() => {
+                      setInput(action);
+                    }}
+                  >
+                    <Text style={styles.quickText}>{action}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          }
+        />
+
+        {isLoading && (
+          <View style={styles.typingIndicator}>
+            <View style={styles.typingDots}>
+              <View style={[styles.dot, styles.dot1]} />
+              <View style={[styles.dot, styles.dot2]} />
+              <View style={[styles.dot, styles.dot3]} />
+            </View>
+            <Text style={styles.typingText}>ИИ печатает...</Text>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}

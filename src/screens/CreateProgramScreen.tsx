@@ -15,11 +15,12 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { getAllExercises } from '../services/exerciseDatabase';
 import { EQUIPMENT_LABELS } from '../utils/constants';
-import { WorkoutStackParamList, Exercise, ProgramExercise, MuscleGroup } from '../models/types';
+import { WorkoutStackParamList, Exercise, ProgramExercise, MuscleGroup, ExerciseLevel } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateProgram'>;
+type SortMode = 'default' | 'name' | 'level' | 'category';
 
 const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   chest: 'Грудь',
@@ -42,17 +43,52 @@ export default function CreateProgramScreen() {
   const navigation = useNavigation<Nav>();
   const addProgram = useWorkoutStore((s) => s.addProgram);
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
+  const favorites = useExercisePrefsStore((s) => s.favorites);
+  const colorTags = useExercisePrefsStore((s) => s.colorTags);
+
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [filterGroup, setFilterGroup] = useState<MuscleGroup | 'all'>('all');
+  const [search, setSearch] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('default');
+
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const allExercises = getAllExercises(customExercises);
-  const filteredExercises = filterGroup === 'all'
-    ? allExercises
-    : allExercises.filter((e) => e.muscleGroup === filterGroup);
+
+  const filteredExercises = useMemo(() => {
+    let list = filterGroup === 'all'
+      ? allExercises
+      : allExercises.filter((e) => e.muscleGroup === filterGroup);
+
+    // Поиск
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((e) => e.name.toLowerCase().includes(q));
+    }
+
+    // Сортировка
+    if (sortMode === 'name') {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    } else if (sortMode === 'level') {
+      const order: Record<ExerciseLevel, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+      list = [...list].sort((a, b) => order[a.level] - order[b.level]);
+    } else if (sortMode === 'category') {
+      list = [...list].sort((a, b) => a.category.localeCompare(b.category));
+    }
+
+    // Избранные первыми (только если сортировка по умолчанию)
+    if (sortMode === 'default') {
+      const favSet = new Set(favorites);
+      const favs = list.filter((e) => favSet.has(e.id));
+      const rest = list.filter((e) => !favSet.has(e.id));
+      return [...favs, ...rest];
+    }
+
+    return list;
+  }, [filterGroup, allExercises, search, sortMode, favorites]);
 
   const handleAddExercise = (exercise: Exercise) => {
     if (selectedExercises.some((e) => e.exerciseId === exercise.id)) return;
@@ -171,6 +207,31 @@ export default function CreateProgramScreen() {
           </TouchableOpacity>
         ) : (
           <View style={styles.pickerContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Поиск упражнений..."
+              placeholderTextColor={colors.textSecondary}
+              value={search}
+              onChangeText={setSearch}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortRow}>
+              {([
+                ['default', 'По умолчанию'],
+                ['name', 'По имени'],
+                ['level', 'По уровню'],
+                ['category', 'По виду'],
+              ] as [SortMode, string][]).map(([key, label]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.sortChip, sortMode === key && styles.sortChipActive]}
+                  onPress={() => setSortMode(key)}
+                >
+                  <Text style={[styles.sortChipText, sortMode === key && styles.sortChipTextActive]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
               {muscleGroups.map((g) => (
                 <TouchableOpacity
@@ -186,6 +247,8 @@ export default function CreateProgramScreen() {
             </ScrollView>
             {filteredExercises.map((ex) => {
               const isSelected = selectedExercises.some((s) => s.exerciseId === ex.id);
+              const isFavorite = favorites.includes(ex.id);
+              const tagColor = colorTags[ex.id];
               return (
                 <TouchableOpacity
                   key={ex.id}
@@ -193,15 +256,21 @@ export default function CreateProgramScreen() {
                   onPress={() => handleAddExercise(ex)}
                   disabled={isSelected}
                 >
-                  <View>
-                    <Text style={[styles.pickerItemName, isSelected && styles.pickerItemNameSelected]}>
-                      {ex.name}
-                    </Text>
-                    <Text style={styles.pickerItemMeta}>
-                      {MUSCLE_GROUP_LABELS[ex.muscleGroup]} · {EQUIPMENT_LABELS[ex.equipment]}
-                    </Text>
+                  <View style={styles.pickerItemContent}>
+                    <View>
+                      <View style={styles.pickerItemHeader}>
+                        {tagColor && <View style={[styles.colorDot, { backgroundColor: tagColor }]} />}
+                        {isFavorite && <Text style={styles.favoriteIcon}>★</Text>}
+                        <Text style={[styles.pickerItemName, isSelected && styles.pickerItemNameSelected]}>
+                          {ex.name}
+                        </Text>
+                      </View>
+                      <Text style={styles.pickerItemMeta}>
+                        {MUSCLE_GROUP_LABELS[ex.muscleGroup]} · {EQUIPMENT_LABELS[ex.equipment]}
+                      </Text>
+                    </View>
+                    {isSelected && <Text style={styles.checkMark}>✓</Text>}
                   </View>
-                  {isSelected && <Text style={styles.checkMark}>✓</Text>}
                 </TouchableOpacity>
               );
             })}
@@ -349,6 +418,40 @@ function getStyles(c: typeof darkColors) {
       borderWidth: 1,
       borderColor: c.workout,
     },
+    searchInput: {
+      backgroundColor: c.background,
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 15,
+      color: c.text,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 10,
+    },
+    sortRow: {
+      marginBottom: 10,
+    },
+    sortChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 14,
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginRight: 6,
+    },
+    sortChipActive: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    sortChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: c.textSecondary,
+    },
+    sortChipTextActive: {
+      color: c.primary,
+    },
     filterRow: {
       flexDirection: 'row',
       marginBottom: 10,
@@ -385,6 +488,26 @@ function getStyles(c: typeof darkColors) {
     },
     pickerItemSelected: {
       opacity: 0.5,
+    },
+    pickerItemContent: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    pickerItemHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    colorDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    favoriteIcon: {
+      fontSize: 14,
+      color: c.primary,
     },
     pickerItemName: {
       fontSize: 15,

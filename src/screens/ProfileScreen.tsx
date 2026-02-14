@@ -202,6 +202,20 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
                 </TouchableOpacity>
               ))}
             </View>
+
+            <Text style={styles.label}>GEMINI API КЛЮЧ (опционально)</Text>
+            <Text style={styles.helperText}>
+              Укажите свой ключ, чтобы не использовать общий лимит. Получить можно на ai.google.dev
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={profile.geminiApiKey || ''}
+              onChangeText={(text) => setProfile({ geminiApiKey: text.trim() })}
+              placeholder="AIzaSy..."
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </>
         )}
 
@@ -315,6 +329,13 @@ function getStyles(c: typeof darkColors) {
       marginTop: 18,
       marginBottom: 8,
       letterSpacing: 1.2,
+    },
+    helperText: {
+      fontSize: 13,
+      color: c.textMuted,
+      marginTop: -4,
+      marginBottom: 8,
+      lineHeight: 18,
     },
     input: {
       backgroundColor: c.surface,

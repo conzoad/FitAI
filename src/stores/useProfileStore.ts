@@ -34,6 +34,7 @@ const DEFAULT_PROFILE: UserProfile = {
   targetCarbs: 225,
   isOnboarded: false,
   weightHistory: [],
+  geminiApiKey: '',
 };
 
 interface ProfileState {
