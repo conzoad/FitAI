@@ -26,12 +26,18 @@ export function parseNutritionResponse(rawText: string): GeminiNutritionResponse
     proteins: Math.max(0, Math.round(Number(item.proteins) * 10) / 10 || 0),
     fats: Math.max(0, Math.round(Number(item.fats) * 10) / 10 || 0),
     carbs: Math.max(0, Math.round(Number(item.carbs) * 10) / 10 || 0),
+    ...(item.glycemicIndex != null && { glycemicIndex: Math.max(0, Math.round(Number(item.glycemicIndex))) }),
+    ...(item.insulinIndex != null && { insulinIndex: Math.max(0, Math.round(Number(item.insulinIndex))) }),
+    ...(item.sugar != null && { sugar: Math.max(0, Math.round(Number(item.sugar) * 10) / 10) }),
+    ...(item.salt != null && { salt: Math.max(0, Math.round(Number(item.salt) * 10) / 10) }),
   }));
 
   parsed.totalCalories = parsed.items.reduce((s, i) => s + i.calories, 0);
   parsed.totalProteins = Math.round(parsed.items.reduce((s, i) => s + i.proteins, 0) * 10) / 10;
   parsed.totalFats = Math.round(parsed.items.reduce((s, i) => s + i.fats, 0) * 10) / 10;
   parsed.totalCarbs = Math.round(parsed.items.reduce((s, i) => s + i.carbs, 0) * 10) / 10;
+  parsed.totalSugar = Math.round(parsed.items.reduce((s, i) => s + (i.sugar || 0), 0) * 10) / 10;
+  parsed.totalSalt = Math.round(parsed.items.reduce((s, i) => s + (i.salt || 0), 0) * 10) / 10;
   parsed.confidence = parsed.confidence || 'medium';
 
   return parsed;

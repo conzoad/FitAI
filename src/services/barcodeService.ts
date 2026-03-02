@@ -60,6 +60,8 @@ function parseOFFProduct(product: any, barcode: string): BarcodeProduct | null {
     proteins: Math.round((n['proteins_100g'] ?? n['proteins'] ?? 0) * 10) / 10,
     fats: Math.round((n['fat_100g'] ?? n['fat'] ?? 0) * 10) / 10,
     carbs: Math.round((n['carbohydrates_100g'] ?? n['carbohydrates'] ?? 0) * 10) / 10,
+    ...(n['sugars_100g'] != null && { sugar: Math.round((n['sugars_100g'] ?? 0) * 10) / 10 }),
+    ...(n['salt_100g'] != null && { salt: Math.round((n['salt_100g'] ?? 0) * 10) / 10 }),
   };
 
   return {

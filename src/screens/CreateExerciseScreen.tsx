@@ -24,6 +24,7 @@ import {
 } from '../models/types';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { analyzeExercisePhoto } from '../services/gemini';
+import { uploadExercisePhoto } from '../services/imageUpload';
 import {
   MUSCLE_GROUP_LABELS,
   EQUIPMENT_LABELS,
@@ -40,6 +41,7 @@ type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateExercise'>;
 export default function CreateExerciseScreen() {
   const navigation = useNavigation<Nav>();
   const addCustomExercise = useExercisePrefsStore((s) => s.addCustomExercise);
+  const updateCustomExercise = useExercisePrefsStore((s) => s.updateCustomExercise);
 
   const [name, setName] = useState('');
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>('chest');
@@ -54,6 +56,7 @@ export default function CreateExerciseScreen() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -116,24 +119,40 @@ export default function CreateExerciseScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Ошибка', 'Введите название упражнения');
       return;
     }
 
-    addCustomExercise({
-      name: name.trim(),
-      muscleGroup,
-      equipment,
-      category,
-      force,
-      level,
-      isCompound,
-      description: description.trim(),
-    });
+    setUploading(true);
+    try {
+      const exerciseId = addCustomExercise({
+        name: name.trim(),
+        muscleGroup,
+        equipment,
+        category,
+        force,
+        level,
+        isCompound,
+        description: description.trim(),
+      });
 
-    navigation.goBack();
+      if (imageUri) {
+        try {
+          const photoUrl = await uploadExercisePhoto(imageUri, exerciseId);
+          updateCustomExercise(exerciseId, { photoUrl });
+        } catch (uploadError) {
+          console.warn('[CreateExercise] Photo upload failed:', uploadError);
+        }
+      }
+
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert('Ошибка', error.message || 'Не удалось сохранить упражнение');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const muscleGroups = getAllMuscleGroups();
@@ -272,11 +291,15 @@ export default function CreateExerciseScreen() {
 
         {/* Save Button */}
         <TouchableOpacity
-          style={[styles.saveButton, !name.trim() && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (!name.trim() || uploading) && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={!name.trim()}
+          disabled={!name.trim() || uploading}
         >
-          <Text style={styles.saveText}>Сохранить упражнение</Text>
+          {uploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveText}>Сохранить упражнение</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -25,7 +25,7 @@ export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }
       activeOpacity={0.7}
     >
       <View style={styles.iconContainer}>
-        {exercise.gifUrl && !gifError ? (
+        {(exercise.photoUrl || exercise.gifUrl) && !gifError ? (
           <>
             {gifLoading && (
               <View style={styles.gifLoading}>
@@ -33,7 +33,7 @@ export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }
               </View>
             )}
             <Image
-              source={{ uri: exercise.gifUrl }}
+              source={{ uri: exercise.photoUrl || exercise.gifUrl }}
               style={styles.thumbnailGif}
               resizeMode="cover"
               onLoad={() => setGifLoading(false)}

@@ -14,8 +14,8 @@ import { EMPTY_MACROS } from '../utils/constants';
 const generateId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const sumItemMacros = (items: FoodItem[]): Macros =>
-  items.reduce(
+const sumItemMacros = (items: FoodItem[]): Macros => {
+  const base = items.reduce(
     (acc, item) => ({
       calories: acc.calories + item.macros.calories,
       proteins: acc.proteins + item.macros.proteins,
@@ -25,8 +25,18 @@ const sumItemMacros = (items: FoodItem[]): Macros =>
     { ...EMPTY_MACROS }
   );
 
-const sumMealMacros = (meals: Meal[]): Macros =>
-  meals.reduce(
+  const hasSugar = items.some(i => i.macros.sugar != null);
+  const hasSalt = items.some(i => i.macros.salt != null);
+
+  return {
+    ...base,
+    ...(hasSugar && { sugar: Math.round(items.reduce((s, i) => s + (i.macros.sugar || 0), 0) * 10) / 10 }),
+    ...(hasSalt && { salt: Math.round(items.reduce((s, i) => s + (i.macros.salt || 0), 0) * 10) / 10 }),
+  };
+};
+
+const sumMealMacros = (meals: Meal[]): Macros => {
+  const base = meals.reduce(
     (acc, meal) => ({
       calories: acc.calories + meal.totalMacros.calories,
       proteins: acc.proteins + meal.totalMacros.proteins,
@@ -35,6 +45,16 @@ const sumMealMacros = (meals: Meal[]): Macros =>
     }),
     { ...EMPTY_MACROS }
   );
+
+  const hasSugar = meals.some(m => m.totalMacros.sugar != null);
+  const hasSalt = meals.some(m => m.totalMacros.salt != null);
+
+  return {
+    ...base,
+    ...(hasSugar && { sugar: Math.round(meals.reduce((s, m) => s + (m.totalMacros.sugar || 0), 0) * 10) / 10 }),
+    ...(hasSalt && { salt: Math.round(meals.reduce((s, m) => s + (m.totalMacros.salt || 0), 0) * 10) / 10 }),
+  };
+};
 
 const createEmptyEntry = (date: string): DailyEntry => ({
   date,
@@ -59,6 +79,7 @@ interface DiaryState {
     newAmount: string,
     newMacros: Macros
   ) => void;
+  removeMealItem: (date: string, mealId: string, itemId: string) => void;
   getEntry: (date: string) => DailyEntry;
   getTodayEntry: () => DailyEntry;
   getWeekEntries: () => DailyEntry[];
@@ -138,6 +159,34 @@ export const useDiaryStore = create<DiaryState>()(
               totalMacros: sumItemMacros(updatedItems),
             };
           });
+
+          return {
+            entries: {
+              ...state.entries,
+              [date]: {
+                date,
+                meals: updatedMeals,
+                totalMacros: sumMealMacros(updatedMeals),
+              },
+            },
+          };
+        });
+      },
+
+      removeMealItem: (date, mealId, itemId) => {
+        set((state) => {
+          const existing = state.entries[date];
+          if (!existing) return state;
+
+          const updatedMeals = existing.meals.map((meal) => {
+            if (meal.id !== mealId) return meal;
+            const updatedItems = meal.items.filter((item) => item.id !== itemId);
+            return {
+              ...meal,
+              items: updatedItems,
+              totalMacros: sumItemMacros(updatedItems),
+            };
+          }).filter((meal) => meal.items.length > 0);
 
           return {
             entries: {

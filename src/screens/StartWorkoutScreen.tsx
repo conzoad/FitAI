@@ -12,6 +12,7 @@ import {
   Image,
   Modal,
   Vibration,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -54,6 +55,8 @@ export default function StartWorkoutScreen() {
   const [weightInputs, setWeightInputs] = useState<Record<string, string>>({});
   const [repsInputs, setRepsInputs] = useState<Record<string, string>>({});
   const [showGif, setShowGif] = useState<Record<string, boolean>>({});
+  const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>({});
+  const [frozenElapsed, setFrozenElapsed] = useState<Record<string, number>>({});
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
   // Timer states
@@ -63,8 +66,53 @@ export default function StartWorkoutScreen() {
   const [restDurations, setRestDurations] = useState<Record<string, number>>({});
   const [restModalExerciseId, setRestModalExerciseId] = useState<string | null>(null);
 
+  // Pause rest timers when app goes to background
+  const appState = useRef(AppState.currentState);
+  const savedRestTimers = useRef<Record<string, { remaining: number; total: number }> | null>(null);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
+        // Going to background: save rest timers
+        savedRestTimers.current = { ...restTimers };
+      } else if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // Returning to foreground: restore saved rest timers (effectively pausing them)
+        if (savedRestTimers.current) {
+          setRestTimers(savedRestTimers.current);
+          savedRestTimers.current = null;
+        }
+      }
+      appState.current = nextAppState;
+    });
+    return () => subscription.remove();
+  }, [restTimers]);
+
   const toggleGif = (exerciseId: string) => {
     setShowGif((prev) => ({ ...prev, [exerciseId]: !prev[exerciseId] }));
+  };
+
+  const toggleExerciseComplete = (exerciseId: string) => {
+    const wasCompleted = completedExercises[exerciseId];
+    if (!wasCompleted) {
+      // Freeze elapsed time
+      setFrozenElapsed((prev) => ({ ...prev, [exerciseId]: exerciseElapsed[exerciseId] || 0 }));
+    } else {
+      // Resuming: reset start time so elapsed continues from frozen value
+      const frozen = frozenElapsed[exerciseId] || 0;
+      setExerciseStartTimes((prev) => ({ ...prev, [exerciseId]: Date.now() - frozen * 1000 }));
+      setFrozenElapsed((prev) => {
+        const next = { ...prev };
+        delete next[exerciseId];
+        return next;
+      });
+    }
+    setCompletedExercises((prev) => ({ ...prev, [exerciseId]: !prev[exerciseId] }));
+    // Stop rest timer when completing exercise
+    setRestTimers((prev) => {
+      const next = { ...prev };
+      delete next[exerciseId];
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -106,11 +154,15 @@ export default function StartWorkoutScreen() {
         setTimer(Math.floor((now - activeWorkout.startTime) / 1000));
       }
 
-      // Update exercise elapsed times
+      // Update exercise elapsed times (skip completed)
       setExerciseElapsed((prev) => {
         const next: Record<string, number> = {};
         for (const [id, start] of Object.entries(exerciseStartTimes)) {
-          next[id] = Math.floor((now - start) / 1000);
+          if (completedExercises[id]) {
+            next[id] = prev[id] ?? frozenElapsed[id] ?? Math.floor((now - start) / 1000);
+          } else {
+            next[id] = Math.floor((now - start) / 1000);
+          }
         }
         return next;
       });
@@ -130,7 +182,7 @@ export default function StartWorkoutScreen() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeWorkout?.startTime, exerciseStartTimes]);
+  }, [activeWorkout?.startTime, exerciseStartTimes, completedExercises, frozenElapsed]);
 
   // Update notification when rest timers change
   useEffect(() => {
@@ -274,12 +326,15 @@ export default function StartWorkoutScreen() {
               const isOvertime = restTimer && restTimer.remaining < 0;
               const elapsed = exerciseElapsed[ex.id] || 0;
               const currentRestDuration = restDurations[ex.id] || DEFAULT_REST;
+              const isCompleted = completedExercises[ex.id] || false;
 
               return (
-                <View key={ex.id} style={styles.exerciseBlock}>
+                <View key={ex.id} style={[styles.exerciseBlock, isCompleted && styles.exerciseBlockCompleted]}>
                   <View style={styles.exerciseHeader}>
                     <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
+                      <Text style={styles.exerciseName}>
+                        {isCompleted ? '✓ ' : ''}{ex.exerciseName}
+                      </Text>
                       <View style={styles.exerciseMetaRow}>
                         {exerciseData?.targetMuscles && (
                           <Text style={styles.muscleSubtext}>
@@ -376,41 +431,52 @@ export default function StartWorkoutScreen() {
                     </View>
                   )}
 
-                  <View style={styles.addSetRow}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Вес"
-                      placeholderTextColor={colors.textMuted}
-                      keyboardType="decimal-pad"
-                      value={weightInputs[ex.id] || ''}
-                      onChangeText={(t) =>
-                        setWeightInputs((prev) => ({ ...prev, [ex.id]: t }))
-                      }
-                    />
-                    <Text style={styles.inputSeparator}>×</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Повт."
-                      placeholderTextColor={colors.textMuted}
-                      keyboardType="number-pad"
-                      value={repsInputs[ex.id] || ''}
-                      onChangeText={(t) =>
-                        setRepsInputs((prev) => ({ ...prev, [ex.id]: t }))
-                      }
-                    />
-                    <TouchableOpacity
-                      style={styles.addSetButton}
-                      onPress={() => handleAddSet(ex.id)}
-                    >
-                      <Text style={styles.addSetText}>+ Подход</Text>
-                    </TouchableOpacity>
-                  </View>
+                  {!isCompleted && (
+                    <View style={styles.addSetRow}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Вес"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="decimal-pad"
+                        value={weightInputs[ex.id] || ''}
+                        onChangeText={(t) =>
+                          setWeightInputs((prev) => ({ ...prev, [ex.id]: t }))
+                        }
+                      />
+                      <Text style={styles.inputSeparator}>×</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Повт."
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="number-pad"
+                        value={repsInputs[ex.id] || ''}
+                        onChangeText={(t) =>
+                          setRepsInputs((prev) => ({ ...prev, [ex.id]: t }))
+                        }
+                      />
+                      <TouchableOpacity
+                        style={styles.addSetButton}
+                        onPress={() => handleAddSet(ex.id)}
+                      >
+                        <Text style={styles.addSetText}>+ Подход</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
-                  {/* Rest duration badge */}
-                  <View style={styles.restDurationInfo}>
-                    <Text style={styles.restDurationText}>
-                      Отдых: {currentRestDuration}с
-                    </Text>
+                  <View style={styles.exerciseFooter}>
+                    {!isCompleted && (
+                      <Text style={styles.restDurationText}>
+                        Отдых: {currentRestDuration}с
+                      </Text>
+                    )}
+                    <TouchableOpacity
+                      style={[styles.completeExerciseButton, isCompleted && styles.completeExerciseButtonDone]}
+                      onPress={() => toggleExerciseComplete(ex.id)}
+                    >
+                      <Text style={[styles.completeExerciseText, isCompleted && styles.completeExerciseTextDone]}>
+                        {isCompleted ? 'Возобновить' : 'Завершить'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -693,15 +759,41 @@ function getStyles(c: typeof darkColors) {
       height: 3,
       backgroundColor: c.workout,
     },
-    restDurationInfo: {
+    exerciseBlockCompleted: {
+      opacity: 0.7,
+      borderColor: c.primary,
+      borderWidth: 1,
+    },
+    exerciseFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 14,
-      paddingVertical: 6,
+      paddingVertical: 8,
       borderTopWidth: 1,
       borderTopColor: c.border,
     },
     restDurationText: {
       fontSize: 11,
       color: c.textMuted,
+    },
+    completeExerciseButton: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: c.primary + '18',
+      marginLeft: 'auto',
+    },
+    completeExerciseButtonDone: {
+      backgroundColor: c.primary,
+    },
+    completeExerciseText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: c.primary,
+    },
+    completeExerciseTextDone: {
+      color: '#FFFFFF',
     },
     addSetRow: {
       flexDirection: 'row',

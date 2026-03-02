@@ -21,7 +21,10 @@
       },
       "permissions": [
         "CAMERA",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.kbzhutracker.app",
       "edgeToEdgeEnabled": true
@@ -46,6 +49,19 @@
     "extra": {
       "eas": {
         "projectId": "42a98aa9-d950-4993-8527-51078ee7f874"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/42a98aa9-d950-4993-8527-51078ee7f874"
+    },
+    "ios": {
+      "bundleIdentifier": "com.kbzhutracker.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     }
   }

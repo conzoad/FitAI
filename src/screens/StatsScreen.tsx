@@ -22,7 +22,7 @@ import { EMPTY_MACROS } from '../utils/constants';
 
 const screenWidth = Dimensions.get('window').width - 40;
 
-type MacroTab = 'proteins' | 'fats' | 'carbs';
+type MacroTab = 'proteins' | 'fats' | 'carbs' | 'sugar' | 'salt';
 
 export default function StatsScreen() {
   const navigation = useNavigation();
@@ -48,14 +48,17 @@ export default function StatsScreen() {
   const proteinData = entries.map((e) => e.totalMacros.proteins);
   const fatData = entries.map((e) => e.totalMacros.fats);
   const carbData = entries.map((e) => e.totalMacros.carbs);
+  const sugarData = entries.map((e) => e.totalMacros.sugar ?? 0);
+  const saltData = entries.map((e) => e.totalMacros.salt ?? 0);
 
   const labels = days.map((d) => formatDayShort(d));
   const displayLabels = period === 'week'
     ? labels
     : labels.filter((_, i) => i % 5 === 0);
 
-  const avgCalories = calorieData.length > 0
-    ? Math.round(calorieData.reduce((a, b) => a + b, 0) / calorieData.length)
+  const daysWithData = calorieData.filter((c) => c > 0);
+  const avgCalories = daysWithData.length > 0
+    ? Math.round(daysWithData.reduce((a, b) => a + b, 0) / daysWithData.length)
     : 0;
 
   const daysInTarget = calorieData.filter(
@@ -79,24 +82,39 @@ export default function StatsScreen() {
     return { weights, labels: weightLabels };
   }, [days, weightHistory, labels]);
 
-  const macroTabData: Record<MacroTab, { data: number[]; color: string; label: string; target: number }> = {
+  const macroTabData: Record<MacroTab, { data: number[]; color: string; label: string; target?: number; suffix: string }> = {
     proteins: {
       data: proteinData,
       color: colors.proteins,
       label: 'Белки',
       target: profile.targetProteins,
+      suffix: 'г',
     },
     fats: {
       data: fatData,
       color: colors.fats,
       label: 'Жиры',
       target: profile.targetFats,
+      suffix: 'г',
     },
     carbs: {
       data: carbData,
       color: colors.carbs,
       label: 'Углеводы',
       target: profile.targetCarbs,
+      suffix: 'г',
+    },
+    sugar: {
+      data: sugarData,
+      color: colors.carbs,
+      label: 'Сахар',
+      suffix: 'г',
+    },
+    salt: {
+      data: saltData,
+      color: colors.textSecondary,
+      label: 'Соль',
+      suffix: 'г',
     },
   };
 
@@ -250,16 +268,51 @@ export default function StatsScreen() {
             />
             <View style={styles.macroSummaryRow}>
               <Text style={[styles.macroAvg, { color: currentMacro.color }]}>
-                Среднее: {Math.round(currentMacro.data.reduce((a, b) => a + b, 0) / currentMacro.data.length)}г
+                Среднее: {(() => {
+                  const withData = currentMacro.data.filter((_, i) => calorieData[i] > 0);
+                  return withData.length > 0 ? Math.round(withData.reduce((a, b) => a + b, 0) / withData.length) : 0;
+                })()}{currentMacro.suffix}
               </Text>
-              <Text style={styles.macroTarget}>
-                Цель: {currentMacro.target}г
-              </Text>
+              {currentMacro.target != null && (
+                <Text style={styles.macroTarget}>
+                  Цель: {currentMacro.target}{currentMacro.suffix}
+                </Text>
+              )}
             </View>
           </View>
         ) : (
           <Text style={styles.noData}>Нет данных за этот период</Text>
         )}
+
+        {/* GI/II Averages */}
+        {(() => {
+          const allItems = entries.flatMap((e) => e.meals.flatMap((m) => m.items));
+          const giItems = allItems.filter((i) => i.macros.glycemicIndex != null);
+          const iiItems = allItems.filter((i) => i.macros.insulinIndex != null);
+          if (giItems.length === 0 && iiItems.length === 0) return null;
+          const avgGI = giItems.length > 0
+            ? Math.round(giItems.reduce((s, i) => s + (i.macros.glycemicIndex || 0), 0) / giItems.length)
+            : null;
+          const avgII = iiItems.length > 0
+            ? Math.round(iiItems.reduce((s, i) => s + (i.macros.insulinIndex || 0), 0) / iiItems.length)
+            : null;
+          return (
+            <View style={[styles.summaryRow, { marginTop: 8 }]}>
+              {avgGI != null && (
+                <View style={styles.summaryCard}>
+                  <Text style={[styles.summaryValue, { color: colors.calories }]}>{avgGI}</Text>
+                  <Text style={styles.summaryLabel}>Средний ГИ</Text>
+                </View>
+              )}
+              {avgII != null && (
+                <View style={styles.summaryCard}>
+                  <Text style={[styles.summaryValue, { color: colors.calories }]}>{avgII}</Text>
+                  <Text style={styles.summaryLabel}>Средний ИИ</Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Weight History */}
         <View style={styles.weightHeader}>

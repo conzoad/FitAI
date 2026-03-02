@@ -129,7 +129,17 @@ export default function ExerciseDetailScreen() {
           </View>
         </View>
 
-        {exercise.gifUrl && !gifError && (
+        {exercise.photoUrl && (
+          <View style={styles.gifContainer}>
+            <Image
+              source={{ uri: exercise.photoUrl }}
+              style={styles.gifImage}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+
+        {exercise.gifUrl && !gifError && !exercise.photoUrl && (
           <View style={styles.gifContainer}>
             {gifLoading && (
               <View style={styles.gifLoading}>

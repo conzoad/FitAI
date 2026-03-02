@@ -11,7 +11,7 @@ interface ExercisePrefsState {
 
   toggleFavorite: (exerciseId: string) => void;
   setColorTag: (exerciseId: string, color: string | null) => void;
-  addCustomExercise: (exercise: Omit<Exercise, 'id' | 'isCustom'>) => void;
+  addCustomExercise: (exercise: Omit<Exercise, 'id' | 'isCustom'>) => string;
   removeCustomExercise: (exerciseId: string) => void;
   updateCustomExercise: (exerciseId: string, updates: Partial<Exercise>) => void;
 }
@@ -47,12 +47,14 @@ export const useExercisePrefsStore = create<ExercisePrefsState>()(
       },
 
       addCustomExercise: (exercise) => {
+        const id = `custom-${generateId()}`;
         set((state) => ({
           customExercises: [
             ...state.customExercises,
-            { ...exercise, id: `custom-${generateId()}`, isCustom: true },
+            { ...exercise, id, isCustom: true },
           ],
         }));
+        return id;
       },
 
       removeCustomExercise: (exerciseId) => {

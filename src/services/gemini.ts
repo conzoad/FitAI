@@ -76,8 +76,12 @@ export async function analyzeTextMeal(description: string): Promise<GeminiNutrit
   }
 }
 
-export async function analyzePhotoMeal(base64Image: string, mimeType: string = 'image/jpeg'): Promise<GeminiNutritionResponse> {
+export async function analyzePhotoMeal(base64Image: string, mimeType: string = 'image/jpeg', userComment?: string): Promise<GeminiNutritionResponse> {
   try {
+    const promptText = userComment?.trim()
+      ? `${FOOD_ANALYSIS_PHOTO_PROMPT}\n\nКомментарий пользователя: "${userComment.trim()}"`
+      : FOOD_ANALYSIS_PHOTO_PROMPT;
+
     const response = await getAI().models.generateContent({
       model: MODEL_NAME,
       contents: [
@@ -88,7 +92,7 @@ export async function analyzePhotoMeal(base64Image: string, mimeType: string = '
           },
         },
         {
-          text: FOOD_ANALYSIS_PHOTO_PROMPT,
+          text: promptText,
         },
       ],
       config: {

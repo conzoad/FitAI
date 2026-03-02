@@ -23,6 +23,7 @@ export default function MealDetailScreen() {
   const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
   const updateMealItem = useDiaryStore((s) => s.updateMealItem);
+  const removeMealItem = useDiaryStore((s) => s.removeMealItem);
   const [isEditing, setIsEditing] = useState(false);
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -51,6 +52,10 @@ export default function MealDetailScreen() {
         proteins: Math.round(item.macros.proteins * ratio * 10) / 10,
         fats: Math.round(item.macros.fats * ratio * 10) / 10,
         carbs: Math.round(item.macros.carbs * ratio * 10) / 10,
+        ...(item.macros.sugar != null && { sugar: Math.round(item.macros.sugar * ratio * 10) / 10 }),
+        ...(item.macros.salt != null && { salt: Math.round(item.macros.salt * ratio * 10) / 10 }),
+        ...(item.macros.glycemicIndex != null && { glycemicIndex: item.macros.glycemicIndex }),
+        ...(item.macros.insulinIndex != null && { insulinIndex: item.macros.insulinIndex }),
       };
 
       updateMealItem(date, mealId, item.id, value, newMacros);
@@ -58,10 +63,28 @@ export default function MealDetailScreen() {
     [date, mealId, updateMealItem]
   );
 
+  const handleDeleteItem = useCallback(
+    (itemId: string) => {
+      Alert.alert('Удалить продукт?', 'Удалить этот продукт из приёма пищи?', [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: () => {
+            removeMealItem(date, mealId, itemId);
+          },
+        },
+      ]);
+    },
+    [date, mealId, removeMealItem]
+  );
+
   if (!meal) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.errorText}>Приём пищи не найден</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 20 }}>
+          <Text style={styles.errorText}>← Приём пищи удалён</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -125,9 +148,14 @@ export default function MealDetailScreen() {
               proteins: item.macros.proteins,
               fats: item.macros.fats,
               carbs: item.macros.carbs,
+              glycemicIndex: item.macros.glycemicIndex,
+              insulinIndex: item.macros.insulinIndex,
+              sugar: item.macros.sugar,
+              salt: item.macros.salt,
             }}
             editable={isEditing}
             onUpdate={(field, value) => handleItemUpdate(item, field, value)}
+            onDelete={() => handleDeleteItem(item.id)}
           />
         ))}
 
@@ -159,6 +187,26 @@ export default function MealDetailScreen() {
               <Text style={styles.totalLabel}>углеводы</Text>
             </View>
           </View>
+          {(meal.totalMacros.sugar != null && meal.totalMacros.sugar > 0 || meal.totalMacros.salt != null && meal.totalMacros.salt > 0) && (
+            <View style={[styles.totalRow, { marginTop: 10 }]}>
+              {meal.totalMacros.sugar != null && meal.totalMacros.sugar > 0 && (
+                <View style={styles.totalItem}>
+                  <Text style={[styles.totalValue, { color: colors.carbs, fontSize: 16 }]}>
+                    {meal.totalMacros.sugar}г
+                  </Text>
+                  <Text style={styles.totalLabel}>сахар</Text>
+                </View>
+              )}
+              {meal.totalMacros.salt != null && meal.totalMacros.salt > 0 && (
+                <View style={styles.totalItem}>
+                  <Text style={[styles.totalValue, { color: colors.textSecondary, fontSize: 16 }]}>
+                    {meal.totalMacros.salt}г
+                  </Text>
+                  <Text style={styles.totalLabel}>соль</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>

@@ -3,6 +3,10 @@ export interface Macros {
   proteins: number;
   fats: number;
   carbs: number;
+  glycemicIndex?: number;
+  insulinIndex?: number;
+  sugar?: number;
+  salt?: number;
 }
 
 export interface FoodItem {
@@ -89,11 +93,17 @@ export interface GeminiNutritionResponse {
     proteins: number;
     fats: number;
     carbs: number;
+    glycemicIndex?: number;
+    insulinIndex?: number;
+    sugar?: number;
+    salt?: number;
   }[];
   totalCalories: number;
   totalProteins: number;
   totalFats: number;
   totalCarbs: number;
+  totalSugar?: number;
+  totalSalt?: number;
   confidence: 'high' | 'medium' | 'low';
 }
 
@@ -202,6 +212,7 @@ export interface Exercise {
   isCompound: boolean;
   isCustom?: boolean;
   gifUrl?: string;
+  photoUrl?: string;
   targetMuscles?: {
     primary: MuscleId[];
     secondary: MuscleId[];

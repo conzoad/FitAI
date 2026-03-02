@@ -28,6 +28,7 @@ import LoadingOverlay from '../components/LoadingOverlay';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
+import { uploadMealPhoto } from '../services/imageUpload';
 
 type InputMode = 'text' | 'photo' | 'search';
 type Nav = NativeStackNavigationProp<AddMealStackParamList, 'AddMeal'>;
@@ -47,9 +48,11 @@ export default function AddMealScreen() {
   const [textInput, setTextInput] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [base64Data, setBase64Data] = useState<string | null>(null);
+  const [photoComment, setPhotoComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeminiNutritionResponse | null>(null);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,11 +75,15 @@ export default function AddMealScreen() {
           proteins: barcodeProduct.macros.proteins,
           fats: barcodeProduct.macros.fats,
           carbs: barcodeProduct.macros.carbs,
+          ...(barcodeProduct.macros.sugar != null && { sugar: barcodeProduct.macros.sugar }),
+          ...(barcodeProduct.macros.salt != null && { salt: barcodeProduct.macros.salt }),
         }],
         totalCalories: barcodeProduct.macros.calories,
         totalProteins: barcodeProduct.macros.proteins,
         totalFats: barcodeProduct.macros.fats,
         totalCarbs: barcodeProduct.macros.carbs,
+        ...(barcodeProduct.macros.sugar != null && { totalSugar: barcodeProduct.macros.sugar }),
+        ...(barcodeProduct.macros.salt != null && { totalSalt: barcodeProduct.macros.salt }),
         confidence: 'high',
       });
       setSaved(false);
@@ -120,11 +127,15 @@ export default function AddMealScreen() {
         proteins: product.macros.proteins,
         fats: product.macros.fats,
         carbs: product.macros.carbs,
+        ...(product.macros.sugar != null && { sugar: product.macros.sugar }),
+        ...(product.macros.salt != null && { salt: product.macros.salt }),
       }],
       totalCalories: product.macros.calories,
       totalProteins: product.macros.proteins,
       totalFats: product.macros.fats,
       totalCarbs: product.macros.carbs,
+      ...(product.macros.sugar != null && { totalSugar: product.macros.sugar }),
+      ...(product.macros.salt != null && { totalSalt: product.macros.salt }),
       confidence: 'high',
     });
     setSearchResults([]);
@@ -141,11 +152,17 @@ export default function AddMealScreen() {
         proteins: item.macros.proteins,
         fats: item.macros.fats,
         carbs: item.macros.carbs,
+        ...(item.macros.sugar != null && { sugar: item.macros.sugar }),
+        ...(item.macros.salt != null && { salt: item.macros.salt }),
+        ...(item.macros.glycemicIndex != null && { glycemicIndex: item.macros.glycemicIndex }),
+        ...(item.macros.insulinIndex != null && { insulinIndex: item.macros.insulinIndex }),
       }],
       totalCalories: item.macros.calories,
       totalProteins: item.macros.proteins,
       totalFats: item.macros.fats,
       totalCarbs: item.macros.carbs,
+      ...(item.macros.sugar != null && { totalSugar: item.macros.sugar }),
+      ...(item.macros.salt != null && { totalSalt: item.macros.salt }),
       confidence: 'high',
     });
     setSearchResults([]);
@@ -221,7 +238,7 @@ export default function AddMealScreen() {
     setResult(null);
     setSaved(false);
     try {
-      const res = await analyzePhotoMeal(base64Data);
+      const res = await analyzePhotoMeal(base64Data, 'image/jpeg', photoComment);
       setResult(res);
     } catch (e: any) {
       Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', e.message || '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0442\u044C \u0431\u043B\u044E\u0434\u043E');
@@ -230,30 +247,54 @@ export default function AddMealScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!result) return;
-    const items: FoodItem[] = result.items.map((item) => ({
-      id: generateId(),
-      name: item.name,
-      amount: item.amount,
-      macros: {
-        calories: item.calories,
-        proteins: item.proteins,
-        fats: item.fats,
-        carbs: item.carbs,
-      },
-    }));
-    addMeal(todayKey(), mealType, items, mode === 'search' ? 'text' : mode, photoUri || undefined);
-    const source = mode === 'search' ? 'barcode' as const : 'ai' as const;
-    addToLibrary(items, source);
-    setSaved(true);
-    Alert.alert('\u0413\u043E\u0442\u043E\u0432\u043E', '\u041F\u0440\u0438\u0451\u043C \u043F\u0438\u0449\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A');
+    setUploading(true);
+    try {
+      const items: FoodItem[] = result.items.map((item) => ({
+        id: generateId(),
+        name: item.name,
+        amount: item.amount,
+        macros: {
+          calories: item.calories,
+          proteins: item.proteins,
+          fats: item.fats,
+          carbs: item.carbs,
+          ...(item.glycemicIndex != null && { glycemicIndex: item.glycemicIndex }),
+          ...(item.insulinIndex != null && { insulinIndex: item.insulinIndex }),
+          ...(item.sugar != null && { sugar: item.sugar }),
+          ...(item.salt != null && { salt: item.salt }),
+        },
+      }));
+
+      let finalPhotoUri: string | undefined;
+      if (photoUri) {
+        try {
+          const photoId = generateId();
+          finalPhotoUri = await uploadMealPhoto(photoUri, photoId);
+        } catch (uploadError) {
+          console.warn('[AddMeal] Photo upload failed:', uploadError);
+          finalPhotoUri = photoUri;
+        }
+      }
+
+      addMeal(todayKey(), mealType, items, mode === 'search' ? 'text' : mode, finalPhotoUri);
+      const source = mode === 'search' ? 'barcode' as const : 'ai' as const;
+      addToLibrary(items, source);
+      setSaved(true);
+      Alert.alert('\u0413\u043E\u0442\u043E\u0432\u043E', '\u041F\u0440\u0438\u0451\u043C \u043F\u0438\u0449\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A');
+    } catch (error: any) {
+      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', error.message || '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleReset = () => {
     setTextInput('');
     setPhotoUri(null);
     setBase64Data(null);
+    setPhotoComment('');
     setResult(null);
     setSaved(false);
     setSearchQuery('');
@@ -341,6 +382,17 @@ export default function AddMealScreen() {
               </View>
               {photoUri && (
                 <Image source={{ uri: photoUri }} style={styles.preview} />
+              )}
+              {photoUri && (
+                <TextInput
+                  style={styles.commentInput}
+                  value={photoComment}
+                  onChangeText={setPhotoComment}
+                  placeholder={'Комментарий: сколько съели, кусков и т.д. (необязательно)'}
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  numberOfLines={2}
+                />
               )}
               {photoUri && (
                 <TouchableOpacity style={styles.analyzeButton} onPress={handleAnalyzePhoto}>
@@ -477,8 +529,16 @@ export default function AddMealScreen() {
               </Text>
 
               {!saved ? (
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <Text style={styles.saveText}>{'\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A'}</Text>
+                <TouchableOpacity
+                  style={[styles.saveButton, uploading && { opacity: 0.5 }]}
+                  onPress={handleSave}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.saveText}>{'\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A'}</Text>
+                  )}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.newButton} onPress={handleReset}>
@@ -631,6 +691,19 @@ function getStyles(c: typeof darkColors) {
       borderRadius: 16,
       marginTop: 12,
       backgroundColor: c.surface,
+    },
+    commentInput: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 14,
+      color: c.text,
+      marginTop: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      minHeight: 50,
+      textAlignVertical: 'top',
+      lineHeight: 20,
     },
     // Search
     searchInput: {

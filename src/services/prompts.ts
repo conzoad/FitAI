@@ -13,15 +13,26 @@ export const FOOD_ANALYSIS_TEXT_PROMPT = `
       "calories": число,
       "proteins": число,
       "fats": число,
-      "carbs": число
+      "carbs": число,
+      "glycemicIndex": число или null,
+      "insulinIndex": число или null,
+      "sugar": число,
+      "salt": число
     }
   ],
   "totalCalories": число,
   "totalProteins": число,
   "totalFats": число,
   "totalCarbs": число,
+  "totalSugar": число,
+  "totalSalt": число,
   "confidence": "high" | "medium" | "low"
 }
+
+glycemicIndex — гликемический индекс продукта (0-100). Если неизвестен — null.
+insulinIndex — инсулиновый индекс продукта (0-120+). Если неизвестен — null.
+sugar — содержание сахаров в граммах.
+salt — содержание соли в граммах.
 
 Если количество не указано, предположи стандартную порцию.
 Все значения КБЖУ указывай в граммах (для БЖУ) и ккал (для калорий).
@@ -55,15 +66,26 @@ export const FOOD_ANALYSIS_PHOTO_PROMPT = `
       "calories": число,
       "proteins": число,
       "fats": число,
-      "carbs": число
+      "carbs": число,
+      "glycemicIndex": число или null,
+      "insulinIndex": число или null,
+      "sugar": число,
+      "salt": число
     }
   ],
   "totalCalories": число,
   "totalProteins": число,
   "totalFats": число,
   "totalCarbs": число,
+  "totalSugar": число,
+  "totalSalt": число,
   "confidence": "high" | "medium" | "low"
 }
+
+glycemicIndex — гликемический индекс продукта (0-100). Если неизвестен — null.
+insulinIndex — инсулиновый индекс продукта (0-120+). Если неизвестен — null.
+sugar — содержание сахаров в граммах.
+salt — содержание соли в граммах.
 `;
 
 export const FITNESS_CHAT_SYSTEM_PROMPT = `
