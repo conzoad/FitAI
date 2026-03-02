@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WorkoutSet } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface SetRowProps {
   set: WorkoutSet;
@@ -14,21 +16,23 @@ interface SetRowProps {
 export default function SetRow({ set, index, onRemove, editable = false }: SetRowProps) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   return (
     <View style={[styles.row, set.isWarmup && styles.warmupRow]}>
       <View style={styles.indexContainer}>
         <Text style={[styles.index, set.isWarmup && styles.warmupText]}>
-          {set.isWarmup ? 'Р' : index}
+          {set.isWarmup ? T.common.warmup : index}
         </Text>
       </View>
       <View style={styles.dataContainer}>
-        <Text style={styles.weight}>{set.weight} кг</Text>
+        <Text style={styles.weight}>{set.weight} {T.common.kg}</Text>
         <Text style={styles.separator}>×</Text>
-        <Text style={styles.reps}>{set.reps} повт.</Text>
+        <Text style={styles.reps}>{set.reps} {T.common.reps}</Text>
       </View>
       <Text style={styles.volume}>
-        {Math.round(set.weight * set.reps)} кг
+        {Math.round(set.weight * set.reps)} {T.common.kg}
       </Text>
       {editable && onRemove && (
         <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
@@ -90,6 +94,8 @@ function getStyles(c: typeof darkColors) {
       color: c.text,
     },
     volume: {
+      width: 60,
+      textAlign: 'right',
       fontSize: 13,
       color: c.textSecondary,
       marginRight: 8,

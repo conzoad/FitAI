@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
@@ -8,10 +8,11 @@ import {
   HomeStackParamList,
   DiaryStackParamList,
   WorkoutStackParamList,
-  AddMealStackParamList,
 } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
@@ -29,12 +30,12 @@ import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 import CreateProgramScreen from '../screens/CreateProgramScreen';
 import CreateExerciseScreen from '../screens/CreateExerciseScreen';
 import ProgramDetailScreen from '../screens/ProgramDetailScreen';
+import MuscleDetailScreen from '../screens/MuscleDetailScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
 const WorkoutStack = createNativeStackNavigator<WorkoutStackParamList>();
-const AddMealStack = createNativeStackNavigator<AddMealStackParamList>();
 
 function HomeStackNavigator() {
   return (
@@ -51,6 +52,8 @@ function DiaryStackNavigator() {
     <DiaryStack.Navigator screenOptions={{ headerShown: false }}>
       <DiaryStack.Screen name="Diary" component={DiaryScreen} />
       <DiaryStack.Screen name="MealDetail" component={MealDetailScreen} />
+      <DiaryStack.Screen name="AddMeal" component={AddMealScreen} />
+      <DiaryStack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
     </DiaryStack.Navigator>
   );
 }
@@ -66,16 +69,8 @@ function WorkoutStackNavigator() {
       <WorkoutStack.Screen name="CreateProgram" component={CreateProgramScreen} />
       <WorkoutStack.Screen name="CreateExercise" component={CreateExerciseScreen} />
       <WorkoutStack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+      <WorkoutStack.Screen name="MuscleDetail" component={MuscleDetailScreen} />
     </WorkoutStack.Navigator>
-  );
-}
-
-function AddMealStackNavigator() {
-  return (
-    <AddMealStack.Navigator screenOptions={{ headerShown: false }}>
-      <AddMealStack.Screen name="AddMeal" component={AddMealScreen} />
-      <AddMealStack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} />
-    </AddMealStack.Navigator>
   );
 }
 
@@ -98,6 +93,8 @@ function TabIcon({ name, color, size }: { name: string; color: string; size: num
 export default function RootNavigator() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   return (
     <Tab.Navigator
@@ -107,15 +104,7 @@ export default function RootNavigator() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarIcon: ({ focused, color }) => {
-          if (route.name === 'AddMealTab') {
-            return (
-              <View style={[styles.addButton, focused && styles.addButtonFocused]}>
-                <Text style={styles.addButtonText}>+</Text>
-              </View>
-            );
-          }
-
+        tabBarIcon: ({ color }) => {
           const iconMap: Record<string, string> = {
             HomeTab: 'home',
             DiaryTab: 'diary',
@@ -131,34 +120,27 @@ export default function RootNavigator() {
       <Tab.Screen
         name="HomeTab"
         component={HomeStackNavigator}
-        options={{ tabBarLabel: 'Главная' }}
+        options={{ tabBarLabel: T.nav.home }}
       />
       <Tab.Screen
         name="DiaryTab"
         component={DiaryStackNavigator}
-        options={{ tabBarLabel: 'Дневник' }}
-      />
-      <Tab.Screen
-        name="AddMealTab"
-        component={AddMealStackNavigator}
-        options={{
-          tabBarLabel: () => null,
-        }}
+        options={{ tabBarLabel: T.nav.diary }}
       />
       <Tab.Screen
         name="WorkoutTab"
         component={WorkoutStackNavigator}
-        options={{ tabBarLabel: 'Трениров.' }}
+        options={{ tabBarLabel: T.nav.workouts }}
       />
       <Tab.Screen
         name="ChatTab"
         component={ChatScreen}
-        options={{ tabBarLabel: 'Чат' }}
+        options={{ tabBarLabel: T.nav.chat }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{ tabBarLabel: 'Профиль' }}
+        options={{ tabBarLabel: T.nav.profile }}
       />
     </Tab.Navigator>
   );
@@ -179,29 +161,6 @@ function getStyles(c: typeof darkColors) {
       fontSize: 10,
       fontWeight: '600',
       letterSpacing: 0.3,
-    },
-    addButton: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: c.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 24,
-      shadowColor: c.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    addButtonFocused: {
-      backgroundColor: c.primaryLight,
-    },
-    addButtonText: {
-      color: '#FFFFFF',
-      fontSize: 30,
-      fontWeight: '600',
-      lineHeight: 32,
     },
   });
 }

@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Meal } from '../models/types';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../utils/constants';
+import { MEAL_TYPE_ICONS } from '../utils/constants';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   meal: Meal;
@@ -14,6 +16,8 @@ interface Props {
 export default function MealCard({ meal, onPress, onDelete }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const ACCENT_COLORS: Record<string, string> = {
     breakfast: colors.fats,
@@ -32,24 +36,24 @@ export default function MealCard({ meal, onPress, onDelete }: Props) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.icon}>{MEAL_TYPE_ICONS[meal.type]}</Text>
-            <Text style={styles.type}>{MEAL_TYPE_LABELS[meal.type]}</Text>
+            <Text style={styles.type}>{T.labels.mealTypes[meal.type]}</Text>
           </View>
           <View style={[styles.calorieBadge, { backgroundColor: accentColor + '20' }]}>
-            <Text style={[styles.calories, { color: accentColor }]}>{Math.round(meal.totalMacros.calories)} ккал</Text>
+            <Text style={[styles.calories, { color: accentColor }]}>{Math.round(meal.totalMacros.calories)} {T.common.kcal}</Text>
           </View>
         </View>
         {itemNames ? <Text style={styles.items} numberOfLines={2}>{itemNames}</Text> : null}
         <View style={styles.macrosRow}>
           <Text style={[styles.macroItem, { color: colors.proteins }]}>
-            Б:{Math.round(meal.totalMacros.proteins)}
+            {T.components.P}:{Math.round(meal.totalMacros.proteins)}
           </Text>
           <Text style={styles.macroDot}>·</Text>
           <Text style={[styles.macroItem, { color: colors.fats }]}>
-            Ж:{Math.round(meal.totalMacros.fats)}
+            {T.components.F}:{Math.round(meal.totalMacros.fats)}
           </Text>
           <Text style={styles.macroDot}>·</Text>
           <Text style={[styles.macroItem, { color: colors.carbs }]}>
-            У:{Math.round(meal.totalMacros.carbs)}
+            {T.components.C}:{Math.round(meal.totalMacros.carbs)}
           </Text>
         </View>
       </View>

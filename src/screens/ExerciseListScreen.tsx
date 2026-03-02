@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, FlatList, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,9 +8,10 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { Exercise, MuscleGroup, ExerciseCategory, Equipment, ExerciseForce, ExerciseLevel, WorkoutStackParamList } from '../models/types';
 import ExerciseCard from '../components/ExerciseCard';
-import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, EXERCISE_CATEGORY_LABELS, EXERCISE_FORCE_LABELS, EXERCISE_LEVEL_LABELS } from '../utils/constants';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'ExerciseList'>;
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseList'>;
@@ -41,6 +42,9 @@ export default function ExerciseListScreen() {
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const groups = useMemo(() => getAllMuscleGroups(), []);
 
@@ -122,12 +126,17 @@ export default function ExerciseListScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>
-          {isSelectMode ? 'Выберите упражнение' : 'Каталог упражнений'}
+          {isSelectMode ? T.exerciseList.selectTitle : T.exerciseList.catalogTitle}
         </Text>
       </View>
 
@@ -135,7 +144,7 @@ export default function ExerciseListScreen() {
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Поиск упражнений..."
+          placeholder={T.exerciseList.searchPlaceholder}
           placeholderTextColor={colors.textSecondary}
           value={search}
           onChangeText={setSearch}
@@ -153,10 +162,10 @@ export default function ExerciseListScreen() {
       {/* Sort row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortRow} contentContainerStyle={styles.sortContent}>
         {([
-          ['default', 'По умолчанию'],
-          ['name', 'По имени'],
-          ['level', 'По уровню'],
-          ['category', 'По виду'],
+          ['default', T.exerciseList.sortDefault],
+          ['name', T.exerciseList.sortName],
+          ['level', T.exerciseList.sortLevel],
+          ['category', T.exerciseList.sortType],
         ] as [SortMode, string][]).map(([key, label]) => (
           <TouchableOpacity
             key={key}
@@ -182,7 +191,7 @@ export default function ExerciseListScreen() {
           onPress={() => setSelectedGroup('all')}
         >
           <Text style={[styles.filterText, selectedGroup === 'all' && styles.filterTextActive]}>
-            Все
+            {T.exerciseList.all}
           </Text>
         </TouchableOpacity>
         {groups.map((group) => (
@@ -192,7 +201,7 @@ export default function ExerciseListScreen() {
             onPress={() => setSelectedGroup(group)}
           >
             <Text style={[styles.filterText, selectedGroup === group && styles.filterTextActive]}>
-              {MUSCLE_GROUP_LABELS[group]}
+              {T.labels.muscleGroups[group]}
             </Text>
           </TouchableOpacity>
         ))}
@@ -211,7 +220,7 @@ export default function ExerciseListScreen() {
         )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Упражнения не найдены</Text>
+          <Text style={styles.emptyText}>{T.exerciseList.notFound}</Text>
         }
       />
 
@@ -230,28 +239,29 @@ export default function ExerciseListScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Фильтры</Text>
+              <Text style={styles.modalTitle}>{T.exerciseList.filters}</Text>
               <TouchableOpacity onPress={clearFilters}>
-                <Text style={styles.clearText}>Сбросить</Text>
+                <Text style={styles.clearText}>{T.exerciseList.reset}</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView>
-              {renderFilterChips('Вид', EXERCISE_CATEGORY_LABELS, filterCategory, setFilterCategory)}
-              {renderFilterChips('Оборудование', EQUIPMENT_LABELS, filterEquipment, setFilterEquipment)}
-              {renderFilterChips('Усилие', EXERCISE_FORCE_LABELS, filterForce, setFilterForce)}
-              {renderFilterChips('Уровень', EXERCISE_LEVEL_LABELS, filterLevel, setFilterLevel)}
+              {renderFilterChips(T.exerciseList.typeLabel, T.labels.exerciseCategories, filterCategory, setFilterCategory)}
+              {renderFilterChips(T.exerciseList.equipmentLabel, T.labels.equipment, filterEquipment, setFilterEquipment)}
+              {renderFilterChips(T.exerciseList.forceLabel, T.labels.exerciseForce, filterForce, setFilterForce)}
+              {renderFilterChips(T.exerciseList.levelLabel, T.labels.exerciseLevels, filterLevel, setFilterLevel)}
             </ScrollView>
 
             <TouchableOpacity
               style={styles.applyButton}
               onPress={() => setFilterModalVisible(false)}
             >
-              <Text style={styles.applyText}>Применить</Text>
+              <Text style={styles.applyText}>{T.exerciseList.apply}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

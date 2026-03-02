@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { lookupBarcode } from '../services/barcodeService';
 import { BarcodeProduct } from '../models/types';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 
@@ -16,6 +18,8 @@ export default function BarcodeScannerScreen() {
   const [product, setProduct] = useState<BarcodeProduct | null>(null);
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -34,16 +38,16 @@ export default function BarcodeScannerScreen() {
         setProduct(found);
       } else {
         Alert.alert(
-          'Продукт не найден',
-          `Штрихкод: ${result.data}\n\nПродукт не найден в базе Open Food Facts. Попробуйте ввести данные вручную.`,
+          T.barcode.notFound,
+          T.barcode.notFoundMessage.replace('{code}', result.data),
           [
-            { text: 'Сканировать ещё', onPress: () => setScanned(false) },
-            { text: 'Назад', onPress: () => navigation.goBack() },
+            { text: T.barcode.scanMore, onPress: () => setScanned(false) },
+            { text: T.common.back, onPress: () => navigation.goBack() },
           ]
         );
       }
     } catch {
-      Alert.alert('Ошибка', 'Не удалось найти продукт. Проверьте интернет.');
+      Alert.alert(T.common.error, T.barcode.networkError);
       setScanned(false);
     } finally {
       setLoading(false);
@@ -70,13 +74,13 @@ export default function BarcodeScannerScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionText}>
-            Для сканирования штрихкодов необходим доступ к камере
+            {T.barcode.cameraPermission}
           </Text>
           <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Разрешить камеру</Text>
+            <Text style={styles.permissionButtonText}>{T.barcode.allowCamera}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backLink}>Назад</Text>
+            <Text style={styles.backLink}>{T.common.back}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -88,48 +92,48 @@ export default function BarcodeScannerScreen() {
       {product ? (
         <View style={styles.resultContainer}>
           <TouchableOpacity onPress={() => { setProduct(null); setScanned(false); }}>
-            <Text style={styles.backText}>← Сканировать ещё</Text>
+            <Text style={styles.backText}>← {T.barcode.scanMore}</Text>
           </TouchableOpacity>
 
           <View style={styles.productCard}>
             <Text style={styles.productName}>{product.name}</Text>
             {product.brand && <Text style={styles.productBrand}>{product.brand}</Text>}
-            <Text style={styles.servingSize}>На {product.servingSize}</Text>
+            <Text style={styles.servingSize}>{T.barcode.serving} {product.servingSize}</Text>
 
             <View style={styles.macrosRow}>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: colors.calories }]}>
                   {product.macros.calories}
                 </Text>
-                <Text style={styles.macroLabel}>ккал</Text>
+                <Text style={styles.macroLabel}>{T.common.kcal}</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: colors.proteins }]}>
                   {product.macros.proteins}
                 </Text>
-                <Text style={styles.macroLabel}>белки</Text>
+                <Text style={styles.macroLabel}>{T.mealDetail.proteins}</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: colors.fats }]}>
                   {product.macros.fats}
                 </Text>
-                <Text style={styles.macroLabel}>жиры</Text>
+                <Text style={styles.macroLabel}>{T.mealDetail.fats}</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: colors.carbs }]}>
                   {product.macros.carbs}
                 </Text>
-                <Text style={styles.macroLabel}>углеводы</Text>
+                <Text style={styles.macroLabel}>{T.mealDetail.carbs}</Text>
               </View>
             </View>
           </View>
 
           <TouchableOpacity style={styles.useButton} onPress={handleUseProduct}>
-            <Text style={styles.useButtonText}>Добавить в приём пищи</Text>
+            <Text style={styles.useButtonText}>{T.barcode.addToMeal}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.cancelButtonText}>Отмена</Text>
+            <Text style={styles.cancelButtonText}>{T.common.cancel}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -156,7 +160,7 @@ export default function BarcodeScannerScreen() {
             </View>
             <View style={styles.overlayBottom}>
               <Text style={styles.scanText}>
-                {loading ? 'Ищем продукт...' : 'Наведите на штрихкод'}
+                {loading ? T.barcode.searching : T.barcode.pointAt}
               </Text>
             </View>
           </View>

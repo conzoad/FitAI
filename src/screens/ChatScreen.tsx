@@ -17,13 +17,15 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { sendChatMessage } from '../services/gemini';
 import { getAllExercises } from '../services/exerciseDatabase';
-import { GOAL_LABELS, MEAL_TYPE_LABELS, EMPTY_MACROS } from '../utils/constants';
+import { EMPTY_MACROS } from '../utils/constants';
 import { todayKey } from '../utils/dateHelpers';
 import { format, subDays, addDays } from 'date-fns';
 import type { DailyEntry, MealType, ChatAction, AIProgramSuggestion } from '../models/types';
 import ChatMessageComponent from '../components/ChatMessage';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 export default function ChatScreen() {
   const { messages, isLoading, addMessage, setLoading, clearHistory } = useChatStore();
@@ -36,6 +38,9 @@ export default function ChatScreen() {
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
   const [input, setInput] = useState('');
   const flatListRef = useRef<FlatList>(null);
+
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -56,8 +61,8 @@ export default function ChatScreen() {
       weekVolume += daySessions.reduce((sum, s) => sum + s.totalVolume, 0);
     }
 
-    lines.push(`- Тренировок за неделю: ${weekWorkouts}`);
-    lines.push(`- Тоннаж за неделю: ${weekVolume >= 1000 ? `${(weekVolume / 1000).toFixed(1)} т` : `${weekVolume} кг`}`);
+    lines.push(`- ${T.chat.contextWeekWorkouts + ':'} ${weekWorkouts}`);
+    lines.push(`- ${T.chat.contextWeekTonnage + ':'} ${weekVolume >= 1000 ? `${(weekVolume / 1000).toFixed(1)} ${T.common.t}` : `${weekVolume} ${T.common.kg}`}`);
 
     // Recent 5 workouts
     const allDates = Object.keys(workoutSessions).sort().reverse();
@@ -66,47 +71,47 @@ export default function ChatScreen() {
       for (const session of workoutSessions[date]) {
         if (recentWorkouts.length >= 5) break;
         const exercises = session.exercises.map((ex) => ex.exerciseName).join(', ');
-        recentWorkouts.push(`  ${date}: ${exercises} (${session.duration} мин, ${session.totalVolume} кг)`);
+        recentWorkouts.push(`  ${date}: ${exercises} (${session.duration} ${T.common.min}, ${session.totalVolume} ${T.common.kg})`);
       }
       if (recentWorkouts.length >= 5) break;
     }
 
     if (recentWorkouts.length > 0) {
-      lines.push('- Последние тренировки:');
+      lines.push(`- ${T.chat.contextRecentWorkouts + ':'}`);
       lines.push(...recentWorkouts);
     } else {
-      lines.push('- Тренировок пока нет');
+      lines.push(`- ${T.chat.contextNoWorkouts}`);
     }
 
     return lines.join('\n');
-  }, [workoutSessions]);
+  }, [workoutSessions, lang, T]);
 
   const foodContext = useMemo(() => {
     const days = [
-      { label: 'Сегодня', key: todayKey() },
-      { label: 'Вчера', key: format(subDays(new Date(), 1), 'yyyy-MM-dd') },
+      { label: T.chat.contextToday, key: todayKey() },
+      { label: T.chat.contextYesterday, key: format(subDays(new Date(), 1), 'yyyy-MM-dd') },
     ];
     const lines: string[] = [];
 
     for (const day of days) {
       const entry: DailyEntry | undefined = entries[day.key];
       if (!entry || entry.meals.length === 0) {
-        lines.push(`${day.label}: нет данных`);
+        lines.push(`${day.label}: ${T.chat.contextNoData}`);
         continue;
       }
 
       const m = entry.totalMacros;
-      lines.push(`${day.label} (${Math.round(m.calories)} ккал, Б:${Math.round(m.proteins)}г Ж:${Math.round(m.fats)}г У:${Math.round(m.carbs)}г):`);
+      lines.push(`${day.label} (${Math.round(m.calories)} ${T.common.kcal}, ${T.meals.B}:${Math.round(m.proteins)}${T.common.g} ${T.meals.F}:${Math.round(m.fats)}${T.common.g} ${T.meals.C}:${Math.round(m.carbs)}${T.common.g}):`);
 
       for (const meal of entry.meals) {
-        const mealLabel = MEAL_TYPE_LABELS[meal.type as MealType] || meal.type;
+        const mealLabel = T.labels.mealTypes[meal.type as MealType] || meal.type;
         const itemNames = meal.items.map((i) => `${i.name} ${i.amount}`).join(', ');
         lines.push(`  ${mealLabel}: ${itemNames}`);
       }
     }
 
     return lines.join('\n');
-  }, [entries]);
+  }, [entries, lang, T]);
 
   const scheduleContext = useMemo(() => {
     const lines: string[] = [];
@@ -118,23 +123,23 @@ export default function ChatScreen() {
       const entry = schedule[key];
       if (entry) {
         const statusMap: Record<string, string> = {
-          planned: 'запланирована',
-          completed: 'выполнена',
-          inProgress: 'в процессе',
-          missed: 'пропущена',
+          planned: T.chat.contextPlanned,
+          completed: T.chat.contextCompleted,
+          inProgress: T.chat.contextInProgress,
+          missed: T.chat.contextMissed,
         };
         lines.push(`- ${key}: ${entry.programName} (${statusMap[entry.status] || entry.status})`);
       }
     }
-    return lines.length > 0 ? lines.join('\n') : 'Нет запланированных тренировок';
-  }, [schedule]);
+    return lines.length > 0 ? lines.join('\n') : T.chat.contextNoSchedule;
+  }, [schedule, lang, T]);
 
   const programsContext = useMemo(() => {
-    if (programs.length === 0) return 'Нет сохранённых программ';
+    if (programs.length === 0) return T.chat.contextNoPrograms;
     return programs.map((p) =>
-      `- ${p.name}: ${p.exercises.length} упр.`
+      `- ${p.name}: ${p.exercises.length} ${T.common.exercises}`
     ).join('\n');
-  }, [programs]);
+  }, [programs, T]);
 
   const parseAIResponse = (response: string): { displayText: string; actions: ChatAction[] } => {
     const actions: ChatAction[] = [];
@@ -192,12 +197,12 @@ export default function ChatScreen() {
       }));
 
       const userContext: Record<string, string> = {
-        NAME: profile.name || 'Пользователь',
+        NAME: profile.name || T.chat.contextUser,
         AGE: String(profile.age),
-        GENDER: profile.gender === 'male' ? 'Мужской' : 'Женский',
+        GENDER: T.labels.genders[profile.gender] || profile.gender,
         HEIGHT: String(profile.heightCm),
         WEIGHT: String(profile.weightKg),
-        GOAL: GOAL_LABELS[profile.goal],
+        GOAL: T.labels.goals[profile.goal] || profile.goal,
         TARGET_CALORIES: String(profile.targetCalories),
         TODAY_CALORIES: String(Math.round(todayEntry.totalMacros.calories)),
         TODAY_P: String(Math.round(todayEntry.totalMacros.proteins)),
@@ -214,18 +219,13 @@ export default function ChatScreen() {
       const { displayText, actions } = parseAIResponse(response);
       addMessage('assistant', displayText, actions.length > 0 ? actions : undefined);
     } catch (e: any) {
-      addMessage('assistant', 'Извините, произошла ошибка. Попробуйте ещё раз.');
+      addMessage('assistant', T.chat.errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const quickActions = [
-    'Что мне поесть?',
-    'Сколько калорий осталось?',
-    'Составь меню на день',
-    'Посоветуй тренировку',
-  ];
+  const quickActions = T.chat.quickActions;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -240,13 +240,13 @@ export default function ChatScreen() {
               <Text style={styles.headerIconText}>🤖</Text>
             </View>
             <View>
-              <Text style={styles.title}>ИИ-помощник</Text>
-              <Text style={styles.headerSubtitle}>{isLoading ? 'Печатает...' : 'Онлайн'}</Text>
+              <Text style={styles.title}>{T.chat.title}</Text>
+              <Text style={styles.headerSubtitle}>{isLoading ? T.chat.typing : T.chat.online}</Text>
             </View>
           </View>
           {messages.length > 0 && (
             <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
-              <Text style={styles.clearText}>Очистить</Text>
+              <Text style={styles.clearText}>{T.chat.clear}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -265,9 +265,9 @@ export default function ChatScreen() {
               <View style={styles.emptyIconCircle}>
                 <Text style={styles.emptyIcon}>🤖</Text>
               </View>
-              <Text style={styles.emptyTitle}>Фитнес-ассистент</Text>
+              <Text style={styles.emptyTitle}>{T.chat.emptyTitle}</Text>
               <Text style={styles.emptySubtitle}>
-                Задайте вопрос о питании, тренировках или здоровом образе жизни
+                {T.chat.emptySubtitle}
               </Text>
               <View style={styles.quickActions}>
                 {quickActions.map((action) => (
@@ -293,7 +293,7 @@ export default function ChatScreen() {
               <View style={[styles.dot, styles.dot2]} />
               <View style={[styles.dot, styles.dot3]} />
             </View>
-            <Text style={styles.typingText}>ИИ печатает...</Text>
+            <Text style={styles.typingText}>{T.chat.aiTyping}</Text>
           </View>
         )}
 
@@ -302,7 +302,7 @@ export default function ChatScreen() {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Введите сообщение..."
+            placeholder={T.chat.inputPlaceholder}
             placeholderTextColor={colors.textMuted}
             multiline
             maxLength={1000}

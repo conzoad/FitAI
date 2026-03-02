@@ -26,6 +26,8 @@ import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import {
   requestNotificationPermissions,
   showRestTimerNotification,
@@ -49,6 +51,8 @@ export default function StartWorkoutScreen() {
   const cancelWorkout = useWorkoutStore((s) => s.cancelWorkout);
 
   const colors = useColors();
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [timer, setTimer] = useState(0);
@@ -147,6 +151,9 @@ export default function StartWorkoutScreen() {
   // Unified timer interval: total workout + per-exercise elapsed + rest countdowns
   useEffect(() => {
     const interval = setInterval(() => {
+      // Skip all timer updates while app is in background
+      if (appState.current !== 'active') return;
+
       const now = Date.now();
 
       // Update total workout timer
@@ -194,7 +201,7 @@ export default function StartWorkoutScreen() {
     // Show notification for the first active rest timer
     const [exerciseId, rt] = entries[0];
     const exercise = activeWorkout?.exercises.find((e) => e.id === exerciseId);
-    const name = exercise?.exerciseName || 'Упражнение';
+    const name = exercise?.exerciseName || T.startWorkout.exercise;
     showRestTimerNotification(name, rt.remaining, rt.total);
   }, [restTimers, activeWorkout?.exercises]);
 
@@ -208,7 +215,7 @@ export default function StartWorkoutScreen() {
     const weight = parseFloat(weightInputs[exerciseId] || '0');
     const reps = parseInt(repsInputs[exerciseId] || '0', 10);
     if (weight <= 0 || reps <= 0) {
-      Alert.alert('Ошибка', 'Укажите вес и повторения');
+      Alert.alert(T.common.error, T.startWorkout.errorWeightReps);
       return;
     }
     addSet(exerciseId, weight, reps, false);
@@ -234,18 +241,18 @@ export default function StartWorkoutScreen() {
 
   const handleFinish = () => {
     if (!activeWorkout || activeWorkout.exercises.length === 0) {
-      Alert.alert('Ошибка', 'Добавьте хотя бы одно упражнение');
+      Alert.alert(T.common.error, T.startWorkout.errorNoExercises);
       return;
     }
     const hasAnySets = activeWorkout.exercises.some((ex) => ex.sets.length > 0);
     if (!hasAnySets) {
-      Alert.alert('Ошибка', 'Добавьте хотя бы один подход');
+      Alert.alert(T.common.error, T.startWorkout.errorNoSets);
       return;
     }
-    Alert.alert('Завершить тренировку?', `Длительность: ${formatTime(timer)}`, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(T.startWorkout.finishTitle, `${T.charts.duration}: ${formatTime(timer)}`, [
+      { text: T.common.cancel, style: 'cancel' },
       {
-        text: 'Завершить',
+        text: T.startWorkout.finish,
         onPress: () => {
           clearAllNotifications();
           finishWorkout();
@@ -256,10 +263,10 @@ export default function StartWorkoutScreen() {
   };
 
   const handleCancel = () => {
-    Alert.alert('Отменить тренировку?', 'Все данные будут потеряны', [
-      { text: 'Нет', style: 'cancel' },
+    Alert.alert(T.startWorkout.cancelTitle, T.startWorkout.cancelMessage, [
+      { text: T.startWorkout.cancelNo, style: 'cancel' },
       {
-        text: 'Да, отменить',
+        text: T.startWorkout.cancelYes,
         style: 'destructive',
         onPress: () => {
           clearAllNotifications();
@@ -291,7 +298,7 @@ export default function StartWorkoutScreen() {
   if (!activeWorkout) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{T.common.loading}</Text>
       </SafeAreaView>
     );
   }
@@ -301,26 +308,28 @@ export default function StartWorkoutScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <View style={styles.timerBar}>
           <TouchableOpacity onPress={handleCancel}>
-            <Text style={styles.cancelText}>Отмена</Text>
+            <Text style={styles.cancelText}>{T.startWorkout.cancelWorkout}</Text>
           </TouchableOpacity>
           <Text style={styles.timerText}>{formatTime(timer)}</Text>
           <TouchableOpacity onPress={handleFinish} style={styles.finishButton}>
-            <Text style={styles.finishText}>Готово</Text>
+            <Text style={styles.finishText}>{T.startWorkout.done}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           {activeWorkout.exercises.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Добавьте упражнения из каталога</Text>
+              <Text style={styles.emptyText}>{T.startWorkout.addExercisesHint}</Text>
             </View>
           ) : (
             activeWorkout.exercises.map((ex) => {
               const exerciseData = getExerciseById(ex.exerciseId, customExercises);
               const gifUrl = exerciseData?.gifUrl;
+              const thumbUrl = exerciseData?.photoUrl || exerciseData?.gifUrl;
               const restTimer = restTimers[ex.id];
               const isResting = restTimer !== undefined;
               const isOvertime = restTimer && restTimer.remaining < 0;
@@ -331,6 +340,12 @@ export default function StartWorkoutScreen() {
               return (
                 <View key={ex.id} style={[styles.exerciseBlock, isCompleted && styles.exerciseBlockCompleted]}>
                   <View style={styles.exerciseHeader}>
+                    {thumbUrl && (
+                      <Image
+                        source={{ uri: thumbUrl }}
+                        style={[styles.exerciseThumb, isCompleted && styles.exerciseThumbCompleted]}
+                      />
+                    )}
                     <View style={styles.exerciseInfo}>
                       <Text style={styles.exerciseName}>
                         {isCompleted ? '✓ ' : ''}{ex.exerciseName}
@@ -376,9 +391,10 @@ export default function StartWorkoutScreen() {
                   {ex.sets.length > 0 && (
                     <View style={styles.setsContainer}>
                       <View style={styles.setsHeader}>
-                        <Text style={styles.setsHeaderText}>Подход</Text>
-                        <Text style={styles.setsHeaderText}>Вес × Повт.</Text>
-                        <Text style={styles.setsHeaderText}>Объём</Text>
+                        <Text style={styles.setsHeaderIndex}>{T.startWorkout.set}</Text>
+                        <Text style={styles.setsHeaderData}>{T.startWorkout.weightReps}</Text>
+                        <Text style={styles.setsHeaderVolume}>{T.startWorkout.volume}</Text>
+                        <View style={{ width: 28 }} />
                       </View>
                       {ex.sets.map((s, idx) => (
                         <SetRow
@@ -396,7 +412,7 @@ export default function StartWorkoutScreen() {
                   {isResting && (
                     <View style={[styles.restBar, isOvertime && styles.restBarOvertime]}>
                       <View style={styles.restBarContent}>
-                        <Text style={styles.restLabel}>{isOvertime ? 'Перерыв!' : 'Отдых'}</Text>
+                        <Text style={styles.restLabel}>{isOvertime ? T.startWorkout.restBreak : T.startWorkout.rest}</Text>
                         <Text style={[
                           styles.restCountdown,
                           isOvertime && { color: colors.error },
@@ -406,16 +422,16 @@ export default function StartWorkoutScreen() {
                             : formatTime(restTimer.remaining)}
                         </Text>
                         <TouchableOpacity onPress={() => handleAddTime(ex.id, 30)} style={styles.addTimeButton}>
-                          <Text style={styles.addTimeText}>+30с</Text>
+                          <Text style={styles.addTimeText}>{T.startWorkout.plus30s}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleAddTime(ex.id, 60)} style={styles.addTimeButton}>
-                          <Text style={styles.addTimeText}>+1м</Text>
+                          <Text style={styles.addTimeText}>{T.startWorkout.plus1m}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleAddTime(ex.id, 120)} style={styles.addTimeButton}>
-                          <Text style={styles.addTimeText}>+2м</Text>
+                          <Text style={styles.addTimeText}>{T.startWorkout.plus2m}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleSkipRest(ex.id)} style={styles.skipRestButton}>
-                          <Text style={styles.skipRestText}>Пропустить</Text>
+                          <Text style={styles.skipRestText}>{T.startWorkout.skip}</Text>
                         </TouchableOpacity>
                       </View>
                       {!isOvertime && (
@@ -435,7 +451,7 @@ export default function StartWorkoutScreen() {
                     <View style={styles.addSetRow}>
                       <TextInput
                         style={styles.input}
-                        placeholder="Вес"
+                        placeholder={T.startWorkout.weight}
                         placeholderTextColor={colors.textMuted}
                         keyboardType="decimal-pad"
                         value={weightInputs[ex.id] || ''}
@@ -446,7 +462,7 @@ export default function StartWorkoutScreen() {
                       <Text style={styles.inputSeparator}>×</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder="Повт."
+                        placeholder={T.startWorkout.reps}
                         placeholderTextColor={colors.textMuted}
                         keyboardType="number-pad"
                         value={repsInputs[ex.id] || ''}
@@ -458,7 +474,7 @@ export default function StartWorkoutScreen() {
                         style={styles.addSetButton}
                         onPress={() => handleAddSet(ex.id)}
                       >
-                        <Text style={styles.addSetText}>+ Подход</Text>
+                        <Text style={styles.addSetText}>{T.startWorkout.addSet}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -466,7 +482,7 @@ export default function StartWorkoutScreen() {
                   <View style={styles.exerciseFooter}>
                     {!isCompleted && (
                       <Text style={styles.restDurationText}>
-                        Отдых: {currentRestDuration}с
+                        {`${T.startWorkout.restTime}${currentRestDuration}s`}
                       </Text>
                     )}
                     <TouchableOpacity
@@ -474,7 +490,7 @@ export default function StartWorkoutScreen() {
                       onPress={() => toggleExerciseComplete(ex.id)}
                     >
                       <Text style={[styles.completeExerciseText, isCompleted && styles.completeExerciseTextDone]}>
-                        {isCompleted ? 'Возобновить' : 'Завершить'}
+                        {isCompleted ? T.startWorkout.resume : T.startWorkout.finish}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -487,7 +503,7 @@ export default function StartWorkoutScreen() {
             style={styles.addExerciseButton}
             onPress={() => navigation.navigate('ExerciseList', { onSelect: true })}
           >
-            <Text style={styles.addExerciseText}>+ Добавить упражнение</Text>
+            <Text style={styles.addExerciseText}>{T.startWorkout.addExercise}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -505,7 +521,7 @@ export default function StartWorkoutScreen() {
           onPress={() => setRestModalExerciseId(null)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Время отдыха</Text>
+            <Text style={styles.modalTitle}>{T.startWorkout.restTimeTitle}</Text>
             {REST_OPTIONS.map((sec) => {
               const isSelected = restModalExerciseId
                 ? (restDurations[restModalExerciseId] || DEFAULT_REST) === sec
@@ -531,7 +547,7 @@ export default function StartWorkoutScreen() {
               style={styles.modalCancel}
               onPress={() => setRestModalExerciseId(null)}
             >
-              <Text style={styles.modalCancelText}>Отмена</Text>
+              <Text style={styles.modalCancelText}>{T.common.cancel}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -615,6 +631,16 @@ function getStyles(c: typeof darkColors) {
     exerciseInfo: {
       flex: 1,
     },
+    exerciseThumb: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 10,
+      backgroundColor: c.background,
+    },
+    exerciseThumbCompleted: {
+      opacity: 0.4,
+    },
     exerciseName: {
       fontSize: 16,
       fontWeight: '700',
@@ -690,15 +716,32 @@ function getStyles(c: typeof darkColors) {
     },
     setsHeader: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 12,
       paddingVertical: 6,
     },
-    setsHeaderText: {
+    setsHeaderIndex: {
+      width: 40,
       fontSize: 11,
       color: c.textSecondary,
       fontWeight: '600',
       textTransform: 'uppercase',
+    },
+    setsHeaderData: {
+      flex: 1,
+      fontSize: 11,
+      color: c.textSecondary,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    },
+    setsHeaderVolume: {
+      width: 60,
+      textAlign: 'right',
+      fontSize: 11,
+      color: c.textSecondary,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      marginRight: 8,
     },
     // Rest timer
     restBar: {

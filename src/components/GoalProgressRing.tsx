@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   consumed: number;
@@ -13,6 +15,8 @@ interface Props {
 export default function GoalProgressRing({ consumed, target, size = 180 }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -49,8 +53,8 @@ export default function GoalProgressRing({ consumed, target, size = 180 }: Props
         <Text style={[styles.value, isOver && { color: colors.error }]}>
           {Math.round(consumed)}
         </Text>
-        <Text style={styles.unit}>ккал</Text>
-        <Text style={styles.label}>из {Math.round(target)}</Text>
+        <Text style={styles.unit}>{T.common.kcal}</Text>
+        <Text style={styles.label}>{T.components.of} {Math.round(target)}</Text>
         <View style={[styles.percentBadge, isOver && { backgroundColor: 'rgba(255, 107, 107, 0.15)' }]}>
           <Text style={[styles.percentText, isOver && { color: colors.error }]}>
             {percentText}%

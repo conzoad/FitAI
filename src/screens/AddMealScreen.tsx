@@ -19,8 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { analyzeTextMeal, analyzePhotoMeal } from '../services/gemini';
 import { searchProducts } from '../services/barcodeService';
 import { useDiaryStore } from '../stores/useDiaryStore';
-import { MealType, FoodItem, GeminiNutritionResponse, AddMealStackParamList, BarcodeProduct, SavedFoodItem } from '../models/types';
-import { MEAL_TYPE_LABELS } from '../utils/constants';
+import { MealType, FoodItem, GeminiNutritionResponse, DiaryStackParamList, BarcodeProduct, SavedFoodItem } from '../models/types';
 import { todayKey } from '../utils/dateHelpers';
 import { generateId } from '../utils/calculations';
 import FoodItemCard from '../components/FoodItemCard';
@@ -29,18 +28,22 @@ import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { useFoodLibraryStore } from '../stores/useFoodLibraryStore';
 import { uploadMealPhoto } from '../services/imageUpload';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type InputMode = 'text' | 'photo' | 'search';
-type Nav = NativeStackNavigationProp<AddMealStackParamList, 'AddMeal'>;
+type Nav = NativeStackNavigationProp<DiaryStackParamList, 'AddMeal'>;
 
 export default function AddMealScreen() {
   const addMeal = useDiaryStore((s) => s.addMeal);
   const addToLibrary = useFoodLibraryStore((s) => s.addItems);
   const searchLibrary = useFoodLibraryStore((s) => s.searchItems);
   const navigation = useNavigation<Nav>();
-  const route = useRoute<RouteProp<AddMealStackParamList, 'AddMeal'>>();
+  const route = useRoute<RouteProp<DiaryStackParamList, 'AddMeal'>>();
 
   const colors = useColors();
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [mealType, setMealType] = useState<MealType>('lunch');
@@ -173,7 +176,7 @@ export default function AddMealScreen() {
 
   const handleAnalyzeText = async () => {
     if (!textInput.trim()) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0431\u043B\u044E\u0434\u0430');
+      Alert.alert(T.common.error, T.meals.errorDescribe);
       return;
     }
     setLoading(true);
@@ -183,7 +186,7 @@ export default function AddMealScreen() {
       const res = await analyzeTextMeal(textInput.trim());
       setResult(res);
     } catch (e: any) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', e.message || '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0431\u043B\u044E\u0434\u043E');
+      Alert.alert(T.common.error, e.message || T.meals.errorAnalyze);
     } finally {
       setLoading(false);
     }
@@ -192,7 +195,7 @@ export default function AddMealScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', '\u041D\u0443\u0436\u0435\u043D \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043A\u0430\u043C\u0435\u0440\u0435');
+      Alert.alert(T.common.error, T.meals.errorCamera);
       return;
     }
     const res = await ImagePicker.launchCameraAsync({
@@ -212,7 +215,7 @@ export default function AddMealScreen() {
   const pickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', '\u041D\u0443\u0436\u0435\u043D \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u0433\u0430\u043B\u0435\u0440\u0435\u0435');
+      Alert.alert(T.common.error, T.meals.errorGallery);
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -231,7 +234,7 @@ export default function AddMealScreen() {
 
   const handleAnalyzePhoto = async () => {
     if (!base64Data) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', '\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u0434\u0435\u043B\u0430\u0439\u0442\u0435 \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u043E\u0442\u043E');
+      Alert.alert(T.common.error, T.meals.errorPhotoFirst);
       return;
     }
     setLoading(true);
@@ -241,7 +244,7 @@ export default function AddMealScreen() {
       const res = await analyzePhotoMeal(base64Data, 'image/jpeg', photoComment);
       setResult(res);
     } catch (e: any) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', e.message || '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0442\u044C \u0431\u043B\u044E\u0434\u043E');
+      Alert.alert(T.common.error, e.message || T.meals.errorRecognize);
     } finally {
       setLoading(false);
     }
@@ -282,9 +285,9 @@ export default function AddMealScreen() {
       const source = mode === 'search' ? 'barcode' as const : 'ai' as const;
       addToLibrary(items, source);
       setSaved(true);
-      Alert.alert('\u0413\u043E\u0442\u043E\u0432\u043E', '\u041F\u0440\u0438\u0451\u043C \u043F\u0438\u0449\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A');
+      Alert.alert(T.meals.savedAlert, T.meals.savedMessage);
     } catch (error: any) {
-      Alert.alert('\u041E\u0448\u0438\u0431\u043A\u0430', error.message || '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C');
+      Alert.alert(T.common.error, error.message || T.meals.errorSave);
     } finally {
       setUploading(false);
     }
@@ -303,9 +306,9 @@ export default function AddMealScreen() {
   };
 
   const confidenceLabel = {
-    high: '\u0412\u044B\u0441\u043E\u043A\u0430\u044F \u0442\u043E\u0447\u043D\u043E\u0441\u0442\u044C',
-    medium: '\u0421\u0440\u0435\u0434\u043D\u044F\u044F \u0442\u043E\u0447\u043D\u043E\u0441\u0442\u044C',
-    low: '\u041D\u0438\u0437\u043A\u0430\u044F \u0442\u043E\u0447\u043D\u043E\u0441\u0442\u044C',
+    high: T.meals.confidenceHigh,
+    medium: T.meals.confidenceMedium,
+    low: T.meals.confidenceLow,
   };
 
   return (
@@ -313,19 +316,20 @@ export default function AddMealScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          <Text style={styles.title}>{'\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u0438\u0451\u043C \u043F\u0438\u0449\u0438'}</Text>
+          <Text style={styles.title}>{T.meals.title}</Text>
 
           <View style={styles.mealTypeRow}>
-            {mealTypes.map((t) => (
+            {mealTypes.map((mt) => (
               <TouchableOpacity
-                key={t}
-                style={[styles.mealTypeChip, mealType === t && styles.mealTypeActive]}
-                onPress={() => setMealType(t)}
+                key={mt}
+                style={[styles.mealTypeChip, mealType === mt && styles.mealTypeActive]}
+                onPress={() => setMealType(mt)}
               >
-                <Text style={[styles.mealTypeText, mealType === t && styles.mealTypeTextActive]}>
-                  {MEAL_TYPE_LABELS[t]}
+                <Text style={[styles.mealTypeText, mealType === mt && styles.mealTypeTextActive]}>
+                  {T.labels.mealTypes[mt]}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -339,7 +343,7 @@ export default function AddMealScreen() {
                 onPress={() => { setMode(m); setResult(null); setSaved(false); }}
               >
                 <Text style={[styles.modeText, mode === m && styles.modeTextActive]}>
-                  {m === 'text' ? '\u0422\u0435\u043A\u0441\u0442' : m === 'photo' ? '\u0424\u043E\u0442\u043E' : '\u041F\u043E\u0438\u0441\u043A'}
+                  {m === 'text' ? T.meals.text : m === 'photo' ? T.meals.photo : T.meals.searchTab}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -350,7 +354,7 @@ export default function AddMealScreen() {
             onPress={() => navigation.navigate('BarcodeScanner')}
           >
             <Text style={styles.barcodeIcon}>{'\u{1F4F7}'}</Text>
-            <Text style={styles.barcodeText}>{'\u0421\u043A\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0448\u0442\u0440\u0438\u0445\u043A\u043E\u0434'}</Text>
+            <Text style={styles.barcodeText}>{T.meals.scanBarcode}</Text>
           </TouchableOpacity>
 
           {mode === 'text' && (
@@ -359,13 +363,13 @@ export default function AddMealScreen() {
                 style={styles.textArea}
                 value={textInput}
                 onChangeText={setTextInput}
-                placeholder={'\u041E\u043F\u0438\u0448\u0438\u0442\u0435 \u0431\u043B\u044E\u0434\u043E, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u043A\u0443\u0440\u0438\u043D\u0430\u044F \u0433\u0440\u0443\u0434\u043A\u0430 200\u0433 \u0441 \u0440\u0438\u0441\u043E\u043C \u0438 \u0441\u0430\u043B\u0430\u0442\u043E\u043C'}
+                placeholder={T.meals.textPlaceholder}
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
               />
               <TouchableOpacity style={styles.analyzeButton} onPress={handleAnalyzeText}>
-                <Text style={styles.analyzeText}>{'\u0420\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0442\u044C'}</Text>
+                <Text style={styles.analyzeText}>{T.meals.analyze}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -374,10 +378,10 @@ export default function AddMealScreen() {
             <View>
               <View style={styles.photoButtons}>
                 <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                  <Text style={styles.photoButtonText}>{'\u0421\u0434\u0435\u043B\u0430\u0442\u044C \u0444\u043E\u0442\u043E'}</Text>
+                  <Text style={styles.photoButtonText}>{T.meals.takePhoto}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.photoButton} onPress={pickPhoto}>
-                  <Text style={styles.photoButtonText}>{'\u0418\u0437 \u0433\u0430\u043B\u0435\u0440\u0435\u0438'}</Text>
+                  <Text style={styles.photoButtonText}>{T.meals.pickPhoto}</Text>
                 </TouchableOpacity>
               </View>
               {photoUri && (
@@ -388,7 +392,7 @@ export default function AddMealScreen() {
                   style={styles.commentInput}
                   value={photoComment}
                   onChangeText={setPhotoComment}
-                  placeholder={'Комментарий: сколько съели, кусков и т.д. (необязательно)'}
+                  placeholder={T.meals.commentPlaceholder}
                   placeholderTextColor={colors.textMuted}
                   multiline
                   numberOfLines={2}
@@ -396,7 +400,7 @@ export default function AddMealScreen() {
               )}
               {photoUri && (
                 <TouchableOpacity style={styles.analyzeButton} onPress={handleAnalyzePhoto}>
-                  <Text style={styles.analyzeText}>{'\u0420\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0442\u044C'}</Text>
+                  <Text style={styles.analyzeText}>{T.meals.analyze}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -408,14 +412,14 @@ export default function AddMealScreen() {
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={handleSearchInput}
-                placeholder={'\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u0430, \u043D\u0430\u043F\u0440.: \u043C\u043E\u043B\u043E\u043A\u043E, \u043E\u0432\u0441\u044F\u043D\u043A\u0430, \u0440\u0438\u0441'}
+                placeholder={T.meals.searchPlaceholder}
                 placeholderTextColor={colors.textSecondary}
                 autoFocus
               />
 
               {libraryResults.length > 0 && (
                 <View style={styles.searchResultsList}>
-                  <Text style={styles.searchSectionLabel}>{'\u041C\u043E\u0438 \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u044B'}</Text>
+                  <Text style={styles.searchSectionLabel}>{T.meals.myProducts}</Text>
                   {libraryResults.slice(0, 5).map((item) => (
                     <TouchableOpacity
                       key={item.id}
@@ -432,10 +436,10 @@ export default function AddMealScreen() {
                       </View>
                       <View style={styles.searchResultMacros}>
                         <Text style={[styles.searchResultKcal, { color: colors.calories }]}>
-                          {item.macros.calories} {'\u043A\u043A\u0430\u043B'}
+                          {item.macros.calories} {T.common.kcal}
                         </Text>
                         <Text style={styles.searchResultBju}>
-                          {'\u0411'}{item.macros.proteins} {'\u0416'}{item.macros.fats} {'\u0423'}{item.macros.carbs}
+                          {T.meals.B}{item.macros.proteins} {T.meals.F}{item.macros.fats} {T.meals.C}{item.macros.carbs}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -446,7 +450,7 @@ export default function AddMealScreen() {
               {searching && (
                 <View style={styles.searchingRow}>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.searchingText}>{'\u041F\u043E\u0438\u0441\u043A...'}</Text>
+                  <Text style={styles.searchingText}>{T.meals.searching}</Text>
                 </View>
               )}
               {searchResults.length > 0 && (
@@ -472,10 +476,10 @@ export default function AddMealScreen() {
                       </View>
                       <View style={styles.searchResultMacros}>
                         <Text style={[styles.searchResultKcal, { color: colors.calories }]}>
-                          {product.macros.calories} {'\u043A\u043A\u0430\u043B'}
+                          {product.macros.calories} {T.common.kcal}
                         </Text>
                         <Text style={styles.searchResultBju}>
-                          {'\u0411'}{product.macros.proteins} {'\u0416'}{product.macros.fats} {'\u0423'}{product.macros.carbs}
+                          {T.meals.B}{product.macros.proteins} {T.meals.F}{product.macros.fats} {T.meals.C}{product.macros.carbs}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -483,7 +487,7 @@ export default function AddMealScreen() {
                 </View>
               )}
               {!searching && searchQuery.length >= 2 && searchResults.length === 0 && libraryResults.length === 0 && (
-                <Text style={styles.noSearchResults}>{'\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E'}</Text>
+                <Text style={styles.noSearchResults}>{T.meals.nothingFound}</Text>
               )}
             </View>
           )}
@@ -491,7 +495,7 @@ export default function AddMealScreen() {
           {result && (
             <View style={styles.resultContainer}>
               <View style={styles.resultHeader}>
-                <Text style={styles.resultTitle}>{'\u0420\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442'}</Text>
+                <Text style={styles.resultTitle}>{T.meals.result}</Text>
                 <Text style={[
                   styles.confidence,
                   result.confidence === 'high' && { color: colors.primary },
@@ -506,26 +510,26 @@ export default function AddMealScreen() {
               ))}
 
               <View style={styles.totalCard}>
-                <Text style={styles.totalTitle}>{'\u0418\u0442\u043E\u0433\u043E'}</Text>
+                <Text style={styles.totalTitle}>{T.meals.total}</Text>
                 <View style={styles.totalRow}>
                   <Text style={[styles.totalValue, { color: colors.calories }]}>
-                    {result.totalCalories} {'\u043A\u043A\u0430\u043B'}
+                    {result.totalCalories} {T.common.kcal}
                   </Text>
                   <Text style={[styles.totalValue, { color: colors.proteins }]}>
-                    {'\u0411'}:{result.totalProteins}{'\u0433'}
+                    {T.meals.B}:{result.totalProteins}{T.common.g}
                   </Text>
                   <Text style={[styles.totalValue, { color: colors.fats }]}>
-                    {'\u0416'}:{result.totalFats}{'\u0433'}
+                    {T.meals.F}:{result.totalFats}{T.common.g}
                   </Text>
                   <Text style={[styles.totalValue, { color: colors.carbs }]}>
-                    {'\u0423'}:{result.totalCarbs}{'\u0433'}
+                    {T.meals.C}:{result.totalCarbs}{T.common.g}
                   </Text>
                 </View>
               </View>
 
               <Text style={styles.disclaimer}>
-                * {'\u0414\u0430\u043D\u043D\u044B\u0435 \u043F\u0440\u0438\u0431\u043B\u0438\u0437\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0435'}
-                {mode !== 'search' ? ' \u0438 \u0440\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u043D\u044B \u0418\u0418' : ' (\u043D\u0430 100\u0433)'}
+                * {T.meals.disclaimer}
+                {mode !== 'search' ? T.meals.disclaimerAI : T.meals.disclaimerSearch}
               </Text>
 
               {!saved ? (
@@ -537,12 +541,12 @@ export default function AddMealScreen() {
                   {uploading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.saveText}>{'\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0432 \u0434\u043D\u0435\u0432\u043D\u0438\u043A'}</Text>
+                    <Text style={styles.saveText}>{T.meals.saveToDiary}</Text>
                   )}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.newButton} onPress={handleReset}>
-                  <Text style={styles.newText}>{'\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0435\u0449\u0451'}</Text>
+                  <Text style={styles.newText}>{T.meals.addMore}</Text>
                 </TouchableOpacity>
               )}
             </View>

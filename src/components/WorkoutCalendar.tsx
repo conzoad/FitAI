@@ -12,12 +12,12 @@ import {
   isSameMonth,
   isSameDay,
 } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS } from 'date-fns/locale';
 import { ScheduledWorkout, WorkoutSession } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
-
-const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface WorkoutCalendarProps {
   schedule: Record<string, ScheduledWorkout>;
@@ -37,6 +37,9 @@ export default function WorkoutCalendar({
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+  const locale = lang === 'ru' ? ru : enUS;
 
   const STATUS_COLORS = {
     completed: colors.success,
@@ -96,7 +99,7 @@ export default function WorkoutCalendar({
           <Text style={styles.navText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.monthTitle}>
-          {format(currentMonth, 'LLLL yyyy', { locale: ru })}
+          {format(currentMonth, 'LLLL yyyy', { locale })}
         </Text>
         <TouchableOpacity
           style={styles.navButton}
@@ -108,7 +111,7 @@ export default function WorkoutCalendar({
 
       {/* Weekday headers */}
       <View style={styles.weekRow}>
-        {WEEK_DAYS.map((d) => (
+        {T.components.weekDays.map((d: string) => (
           <View key={d} style={styles.weekDayCell}>
             <Text style={styles.weekDayText}>{d}</Text>
           </View>

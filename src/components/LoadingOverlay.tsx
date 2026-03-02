@@ -2,15 +2,21 @@ import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   visible: boolean;
   text?: string;
 }
 
-export default function LoadingOverlay({ visible, text = 'Анализируем...' }: Props) {
+export default function LoadingOverlay({ visible, text }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
+  const displayText = text ?? T.components.analyzing;
 
   if (!visible) return null;
 
@@ -21,8 +27,8 @@ export default function LoadingOverlay({ visible, text = 'Анализируем
           <View style={styles.indicatorRing}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
-          <Text style={styles.text}>{text}</Text>
-          <Text style={styles.subtext}>Это может занять несколько секунд</Text>
+          <Text style={styles.text}>{displayText}</Text>
+          <Text style={styles.subtext}>{T.components.analyzingSubtext}</Text>
         </View>
       </View>
     </Modal>

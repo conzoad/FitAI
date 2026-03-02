@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useDiaryStore } from '../stores/useDiaryStore';
 import { DiaryStackParamList, FoodItem, Macros } from '../models/types';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
+import { MEAL_TYPE_ICONS, EMPTY_MACROS } from '../utils/constants';
 import FoodItemCard from '../components/FoodItemCard';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Route = RouteProp<DiaryStackParamList, 'MealDetail'>;
 
@@ -27,6 +29,8 @@ export default function MealDetailScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const entry = useMemo(
     () => entries[date] || { date, meals: [], totalMacros: EMPTY_MACROS },
@@ -65,10 +69,10 @@ export default function MealDetailScreen() {
 
   const handleDeleteItem = useCallback(
     (itemId: string) => {
-      Alert.alert('Удалить продукт?', 'Удалить этот продукт из приёма пищи?', [
-        { text: 'Отмена', style: 'cancel' },
+      Alert.alert(T.mealDetail.deleteItemTitle, T.mealDetail.deleteItemMessage, [
+        { text: T.common.cancel, style: 'cancel' },
         {
-          text: 'Удалить',
+          text: T.mealDetail.deleteConfirm,
           style: 'destructive',
           onPress: () => {
             removeMealItem(date, mealId, itemId);
@@ -83,17 +87,17 @@ export default function MealDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 20 }}>
-          <Text style={styles.errorText}>← Приём пищи удалён</Text>
+          <Text style={styles.errorText}>← {T.mealDetail.deleted}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   const handleDelete = () => {
-    Alert.alert('Удалить?', 'Удалить этот приём пищи?', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(T.mealDetail.deleteMealTitle, T.mealDetail.deleteMealMessage, [
+      { text: T.common.cancel, style: 'cancel' },
       {
-        text: 'Удалить',
+        text: T.mealDetail.deleteConfirm,
         style: 'destructive',
         onPress: () => {
           removeMeal(date, mealId);
@@ -107,16 +111,16 @@ export default function MealDetailScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
         <View style={styles.header}>
           <Text style={styles.icon}>{MEAL_TYPE_ICONS[meal.type]}</Text>
-          <Text style={styles.title}>{MEAL_TYPE_LABELS[meal.type]}</Text>
+          <Text style={styles.title}>{T.labels.mealTypes[meal.type]}</Text>
         </View>
 
         <Text style={styles.time}>
-          {new Date(meal.timestamp).toLocaleTimeString('ru-RU', {
+          {new Date(meal.timestamp).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
           })}
@@ -127,13 +131,13 @@ export default function MealDetailScreen() {
         )}
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Состав</Text>
+          <Text style={styles.sectionTitle}>{T.mealDetail.composition}</Text>
           <TouchableOpacity
             onPress={() => setIsEditing(!isEditing)}
             style={styles.editButton}
           >
             <Text style={styles.editButtonText}>
-              {isEditing ? 'Готово' : 'Изменить'}
+              {isEditing ? T.mealDetail.done : T.mealDetail.edit}
             </Text>
           </TouchableOpacity>
         </View>
@@ -160,31 +164,31 @@ export default function MealDetailScreen() {
         ))}
 
         <View style={styles.totalCard}>
-          <Text style={styles.totalTitle}>Итого</Text>
+          <Text style={styles.totalTitle}>{T.mealDetail.total}</Text>
           <View style={styles.totalRow}>
             <View style={styles.totalItem}>
               <Text style={[styles.totalValue, { color: colors.calories }]}>
                 {Math.round(meal.totalMacros.calories)}
               </Text>
-              <Text style={styles.totalLabel}>ккал</Text>
+              <Text style={styles.totalLabel}>{T.mealDetail.kcal}</Text>
             </View>
             <View style={styles.totalItem}>
               <Text style={[styles.totalValue, { color: colors.proteins }]}>
                 {Math.round(meal.totalMacros.proteins)}
               </Text>
-              <Text style={styles.totalLabel}>белки</Text>
+              <Text style={styles.totalLabel}>{T.mealDetail.proteins}</Text>
             </View>
             <View style={styles.totalItem}>
               <Text style={[styles.totalValue, { color: colors.fats }]}>
                 {Math.round(meal.totalMacros.fats)}
               </Text>
-              <Text style={styles.totalLabel}>жиры</Text>
+              <Text style={styles.totalLabel}>{T.mealDetail.fats}</Text>
             </View>
             <View style={styles.totalItem}>
               <Text style={[styles.totalValue, { color: colors.carbs }]}>
                 {Math.round(meal.totalMacros.carbs)}
               </Text>
-              <Text style={styles.totalLabel}>углеводы</Text>
+              <Text style={styles.totalLabel}>{T.mealDetail.carbs}</Text>
             </View>
           </View>
           {(meal.totalMacros.sugar != null && meal.totalMacros.sugar > 0 || meal.totalMacros.salt != null && meal.totalMacros.salt > 0) && (
@@ -192,17 +196,17 @@ export default function MealDetailScreen() {
               {meal.totalMacros.sugar != null && meal.totalMacros.sugar > 0 && (
                 <View style={styles.totalItem}>
                   <Text style={[styles.totalValue, { color: colors.carbs, fontSize: 16 }]}>
-                    {meal.totalMacros.sugar}г
+                    {meal.totalMacros.sugar}{T.common.g}
                   </Text>
-                  <Text style={styles.totalLabel}>сахар</Text>
+                  <Text style={styles.totalLabel}>{T.mealDetail.sugar}</Text>
                 </View>
               )}
               {meal.totalMacros.salt != null && meal.totalMacros.salt > 0 && (
                 <View style={styles.totalItem}>
                   <Text style={[styles.totalValue, { color: colors.textSecondary, fontSize: 16 }]}>
-                    {meal.totalMacros.salt}г
+                    {meal.totalMacros.salt}{T.common.g}
                   </Text>
-                  <Text style={styles.totalLabel}>соль</Text>
+                  <Text style={styles.totalLabel}>{T.mealDetail.salt}</Text>
                 </View>
               )}
             </View>
@@ -210,7 +214,7 @@ export default function MealDetailScreen() {
         </View>
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteText}>Удалить приём пищи</Text>
+          <Text style={styles.deleteText}>{T.mealDetail.deleteMeal}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

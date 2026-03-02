@@ -11,8 +11,10 @@ import GoalProgressRing from '../components/GoalProgressRing';
 import MacroSummaryBar from '../components/MacroSummaryBar';
 import MealCard from '../components/MealCard';
 import EmptyState from '../components/EmptyState';
-import { formatDateRussian, todayKey } from '../utils/dateHelpers';
+import { formatDateLocalized, todayKey } from '../utils/dateHelpers';
 import { darkColors } from '../theme/colors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import { useColors } from '../theme/useColors';
 import { EMPTY_MACROS } from '../utils/constants';
 
@@ -21,6 +23,8 @@ type Nav = NativeStackNavigationProp<HomeStackParamList>;
 export default function HomeScreen() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const navigation = useNavigation<Nav>();
   const profile = useProfileStore((s) => s.profile);
@@ -52,9 +56,9 @@ export default function HomeScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.greetingCard}>
           <Text style={styles.greeting}>
-            Привет, {profile.name || 'друг'}! 👋
+            {T.home.greeting.replace('{name}', profile.name || T.home.friendDefault)} 👋
           </Text>
-          <Text style={styles.date}>{formatDateRussian(new Date())}</Text>
+          <Text style={styles.date}>{formatDateLocalized(new Date(), lang)}</Text>
         </View>
 
         <View style={styles.ringContainer}>
@@ -74,10 +78,10 @@ export default function HomeScreen() {
         />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Последние приёмы пищи</Text>
+          <Text style={styles.sectionTitle}>{T.home.recentMeals}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Stats')}>
             <View style={styles.statsLinkBadge}>
-              <Text style={styles.statsLink}>Статистика →</Text>
+              <Text style={styles.statsLink}>{T.home.statsLink}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -89,14 +93,14 @@ export default function HomeScreen() {
         ) : (
           <EmptyState
             icon="🍽️"
-            title="Пока пусто"
-            subtitle="Добавьте первый приём пищи, нажав +"
+            title={T.home.emptyMealsTitle}
+            subtitle={T.home.emptyMealsSubtitle}
           />
         )}
 
         {/* Workout Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Тренировки</Text>
+          <Text style={styles.sectionTitle}>{T.home.workouts}</Text>
         </View>
 
         {todayWorkouts.length > 0 ? (
@@ -109,12 +113,12 @@ export default function HomeScreen() {
                     <Text style={styles.workoutIcon}>🏋️</Text>
                   </View>
                   <View style={styles.workoutInfo}>
-                    <Text style={styles.workoutTitle}>Тренировка сегодня</Text>
+                    <Text style={styles.workoutTitle}>{T.home.todayWorkout}</Text>
                     <Text style={styles.workoutMeta}>
-                      {session.exercises.length} упр. · {session.duration} мин ·{' '}
+                      {session.exercises.length} {T.common.exercises} · {session.duration} {T.common.min} ·{' '}
                       {session.totalVolume >= 1000
-                        ? `${(session.totalVolume / 1000).toFixed(1)}т`
-                        : `${session.totalVolume}кг`}
+                        ? `${(session.totalVolume / 1000).toFixed(1)}${T.common.t}`
+                        : `${session.totalVolume}${T.common.kg}`}
                     </Text>
                   </View>
                 </View>
@@ -130,12 +134,12 @@ export default function HomeScreen() {
                   <Text style={styles.workoutIcon}>🏋️</Text>
                 </View>
                 <View style={styles.workoutInfo}>
-                  <Text style={styles.workoutTitle}>Последняя тренировка</Text>
+                  <Text style={styles.workoutTitle}>{T.home.lastWorkout}</Text>
                   <Text style={styles.workoutMeta}>
-                    {lastWorkout.exercises.length} упр. · {lastWorkout.duration} мин ·{' '}
+                    {lastWorkout.exercises.length} {T.common.exercises} · {lastWorkout.duration} {T.common.min} ·{' '}
                     {lastWorkout.totalVolume >= 1000
-                      ? `${(lastWorkout.totalVolume / 1000).toFixed(1)}т`
-                      : `${lastWorkout.totalVolume}кг`}
+                      ? `${(lastWorkout.totalVolume / 1000).toFixed(1)}${T.common.t}`
+                      : `${lastWorkout.totalVolume}${T.common.kg}`}
                   </Text>
                 </View>
               </View>
@@ -145,7 +149,7 @@ export default function HomeScreen() {
           <View style={styles.workoutCard}>
             <View style={styles.workoutBody}>
               <Text style={styles.noWorkoutText}>
-                Нет тренировок. Перейдите на вкладку "Трениров." чтобы начать!
+                {T.home.noWorkouts}
               </Text>
             </View>
           </View>

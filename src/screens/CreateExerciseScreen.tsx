@@ -9,9 +9,11 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -25,34 +27,39 @@ import {
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { analyzeExercisePhoto } from '../services/gemini';
 import { uploadExercisePhoto } from '../services/imageUpload';
-import {
-  MUSCLE_GROUP_LABELS,
-  EQUIPMENT_LABELS,
-  EXERCISE_CATEGORY_LABELS,
-  EXERCISE_FORCE_LABELS,
-  EXERCISE_LEVEL_LABELS,
-} from '../utils/constants';
-import { getAllMuscleGroups } from '../services/exerciseDatabase';
+import { getAllMuscleGroups, getExerciseById } from '../services/exerciseDatabase';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateExercise'>;
+type Route = RouteProp<WorkoutStackParamList, 'CreateExercise'>;
 
 export default function CreateExerciseScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
+  const editingId = route.params?.exerciseId;
+
   const addCustomExercise = useExercisePrefsStore((s) => s.addCustomExercise);
   const updateCustomExercise = useExercisePrefsStore((s) => s.updateCustomExercise);
+  const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
-  const [name, setName] = useState('');
-  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>('chest');
-  const [equipment, setEquipment] = useState<Equipment>('none');
-  const [category, setCategory] = useState<ExerciseCategory>('strength');
-  const [force, setForce] = useState<ExerciseForce>('push');
-  const [level, setLevel] = useState<ExerciseLevel>('beginner');
-  const [isCompound, setIsCompound] = useState(true);
-  const [description, setDescription] = useState('');
+  const existingExercise = useMemo(
+    () => (editingId ? getExerciseById(editingId, customExercises) : null),
+    [editingId, customExercises],
+  );
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [name, setName] = useState(existingExercise?.name ?? '');
+  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(existingExercise?.muscleGroup ?? 'chest');
+  const [equipment, setEquipment] = useState<Equipment>(existingExercise?.equipment ?? 'none');
+  const [category, setCategory] = useState<ExerciseCategory>(existingExercise?.category ?? 'strength');
+  const [force, setForce] = useState<ExerciseForce>(existingExercise?.force ?? 'push');
+  const [level, setLevel] = useState<ExerciseLevel>(existingExercise?.level ?? 'beginner');
+  const [isCompound, setIsCompound] = useState(existingExercise?.isCompound ?? true);
+  const [description, setDescription] = useState(existingExercise?.description ?? '');
+
+  const [imageUri, setImageUri] = useState<string | null>(existingExercise?.photoUrl ?? null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
   const [analyzing, setAnalyzing] = useState(false);
@@ -61,13 +68,16 @@ export default function CreateExerciseScreen() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
   const pickImage = async (source: 'camera' | 'gallery') => {
     let result: ImagePicker.ImagePickerResult;
 
     if (source === 'camera') {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Ошибка', 'Нужен доступ к камере');
+        Alert.alert(T.common.error, T.createExercise.cameraError);
         return;
       }
       result = await ImagePicker.launchCameraAsync({
@@ -77,7 +87,7 @@ export default function CreateExerciseScreen() {
     } else {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Ошибка', 'Нужен доступ к галерее');
+        Alert.alert(T.common.error, T.createExercise.galleryError);
         return;
       }
       result = await ImagePicker.launchImageLibraryAsync({
@@ -97,7 +107,7 @@ export default function CreateExerciseScreen() {
 
   const handleAnalyze = async () => {
     if (!imageBase64) {
-      Alert.alert('Ошибка', 'Сначала сделайте или выберите фото');
+      Alert.alert(T.common.error, T.createExercise.analyzeError);
       return;
     }
 
@@ -113,7 +123,7 @@ export default function CreateExerciseScreen() {
       setIsCompound(result.isCompound);
       setDescription(result.description);
     } catch (error: any) {
-      Alert.alert('Ошибка анализа', error.message || 'Не удалось распознать упражнение');
+      Alert.alert(T.common.error, error.message);
     } finally {
       setAnalyzing(false);
     }
@@ -121,13 +131,13 @@ export default function CreateExerciseScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Ошибка', 'Введите название упражнения');
+      Alert.alert(T.common.error, T.createExercise.nameError);
       return;
     }
 
     setUploading(true);
     try {
-      const exerciseId = addCustomExercise({
+      const exerciseData = {
         name: name.trim(),
         muscleGroup,
         equipment,
@@ -136,30 +146,45 @@ export default function CreateExerciseScreen() {
         level,
         isCompound,
         description: description.trim(),
-      });
+      };
 
-      if (imageUri) {
-        try {
-          const photoUrl = await uploadExercisePhoto(imageUri, exerciseId);
-          updateCustomExercise(exerciseId, { photoUrl });
-        } catch (uploadError) {
-          console.warn('[CreateExercise] Photo upload failed:', uploadError);
+      if (editingId) {
+        updateCustomExercise(editingId, exerciseData);
+
+        if (imageUri && imageBase64) {
+          try {
+            const photoUrl = await uploadExercisePhoto(imageUri, editingId);
+            updateCustomExercise(editingId, { photoUrl });
+          } catch (uploadError) {
+            console.warn('[CreateExercise] Photo upload failed:', uploadError);
+          }
+        }
+      } else {
+        const newId = addCustomExercise(exerciseData);
+
+        if (imageUri && imageBase64) {
+          try {
+            const photoUrl = await uploadExercisePhoto(imageUri, newId);
+            updateCustomExercise(newId, { photoUrl });
+          } catch (uploadError) {
+            console.warn('[CreateExercise] Photo upload failed:', uploadError);
+          }
         }
       }
 
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить упражнение');
+      Alert.alert(T.common.error, error.message);
     } finally {
       setUploading(false);
     }
   };
 
   const muscleGroups = getAllMuscleGroups();
-  const equipmentKeys = Object.keys(EQUIPMENT_LABELS) as Equipment[];
-  const categoryKeys = Object.keys(EXERCISE_CATEGORY_LABELS) as ExerciseCategory[];
-  const forceKeys = Object.keys(EXERCISE_FORCE_LABELS) as ExerciseForce[];
-  const levelKeys = Object.keys(EXERCISE_LEVEL_LABELS) as ExerciseLevel[];
+  const equipmentKeys: Equipment[] = ['none', 'barbell', 'dumbbells', 'dumbbell', 'kettlebell', 'machine', 'cable', 'band', 'fitball', 'pullUpBar', 'parallelBars', 'ezBar', 'treadmill', 'stationaryBike', 'jumpRope'];
+  const categoryKeys: ExerciseCategory[] = ['strength', 'cardio', 'stretching', 'plyometric', 'powerlifting', 'weightlifting'];
+  const forceKeys: ExerciseForce[] = ['push', 'pull', 'static', 'other'];
+  const levelKeys: ExerciseLevel[] = ['beginner', 'intermediate', 'advanced'];
 
   const renderChips = <T extends string>(
     options: T[],
@@ -187,121 +212,126 @@ export default function CreateExerciseScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
-        </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>{T.common.back}</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.title}>Новое упражнение</Text>
+          <Text style={styles.title}>{editingId ? T.createExercise.titleEdit : T.createExercise.titleNew}</Text>
 
-        {/* Photo Section */}
-        <View style={styles.photoSection}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.photoPreview} resizeMode="cover" />
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>Фото упражнения</Text>
+          {/* Photo Section */}
+          <View style={styles.photoSection}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.photoPreview} resizeMode="cover" />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <Text style={styles.photoPlaceholderText}>{T.createExercise.photoLabel}</Text>
+              </View>
+            )}
+
+            <View style={styles.photoButtons}>
+              <TouchableOpacity
+                style={styles.photoButton}
+                onPress={() => pickImage('camera')}
+              >
+                <Text style={styles.photoButtonText}>{T.createExercise.camera}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.photoButton}
+                onPress={() => pickImage('gallery')}
+              >
+                <Text style={styles.photoButtonText}>{T.createExercise.gallery}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.photoButton, styles.aiButton]}
+                onPress={handleAnalyze}
+                disabled={analyzing || !imageBase64}
+              >
+                {analyzing ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={[styles.photoButtonText, styles.aiButtonText]}>
+                    {T.createExercise.analyzeAI}
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
-          )}
-
-          <View style={styles.photoButtons}>
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={() => pickImage('camera')}
-            >
-              <Text style={styles.photoButtonText}>Камера</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={() => pickImage('gallery')}
-            >
-              <Text style={styles.photoButtonText}>Галерея</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.photoButton, styles.aiButton]}
-              onPress={handleAnalyze}
-              disabled={analyzing || !imageBase64}
-            >
-              {analyzing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={[styles.photoButtonText, styles.aiButtonText]}>
-                  Распознать с ИИ
-                </Text>
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Name */}
-        <Text style={styles.label}>Название</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Название упражнения"
-          placeholderTextColor={colors.textSecondary}
-        />
+          {/* Name */}
+          <Text style={styles.label}>{T.createExercise.nameLabel}</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder={T.createExercise.namePlaceholder}
+            placeholderTextColor={colors.textSecondary}
+          />
 
-        {/* Muscle Group */}
-        <Text style={styles.label}>Группа мышц</Text>
-        {renderChips(muscleGroups, MUSCLE_GROUP_LABELS, muscleGroup, setMuscleGroup)}
+          {/* Muscle Group */}
+          <Text style={styles.label}>{T.createExercise.muscleGroupLabel}</Text>
+          {renderChips(muscleGroups, T.labels.muscleGroups, muscleGroup, setMuscleGroup)}
 
-        {/* Equipment */}
-        <Text style={styles.label}>Оборудование</Text>
-        {renderChips(equipmentKeys, EQUIPMENT_LABELS, equipment, setEquipment)}
+          {/* Equipment */}
+          <Text style={styles.label}>{T.createExercise.equipmentLabel}</Text>
+          {renderChips(equipmentKeys, T.labels.equipment, equipment, setEquipment)}
 
-        {/* Category */}
-        <Text style={styles.label}>Категория</Text>
-        {renderChips(categoryKeys, EXERCISE_CATEGORY_LABELS, category, setCategory)}
+          {/* Category */}
+          <Text style={styles.label}>{T.createExercise.categoryLabel}</Text>
+          {renderChips(categoryKeys, T.labels.exerciseCategories, category, setCategory)}
 
-        {/* Force */}
-        <Text style={styles.label}>Тип усилия</Text>
-        {renderChips(forceKeys, EXERCISE_FORCE_LABELS, force, setForce)}
+          {/* Force */}
+          <Text style={styles.label}>{T.createExercise.forceLabel}</Text>
+          {renderChips(forceKeys, T.labels.exerciseForce, force, setForce)}
 
-        {/* Level */}
-        <Text style={styles.label}>Уровень</Text>
-        {renderChips(levelKeys, EXERCISE_LEVEL_LABELS, level, setLevel)}
+          {/* Level */}
+          <Text style={styles.label}>{T.createExercise.levelLabel}</Text>
+          {renderChips(levelKeys, T.labels.exerciseLevels, level, setLevel)}
 
-        {/* isCompound Toggle */}
-        <Text style={styles.label}>Тип упражнения</Text>
-        <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={() => setIsCompound((prev) => !prev)}
-        >
-          <Text style={styles.toggleText}>
-            {isCompound ? 'Базовое' : 'Изолирующее'}
-          </Text>
-        </TouchableOpacity>
+          {/* isCompound Toggle */}
+          <Text style={styles.label}>{T.createExercise.typeLabel}</Text>
+          <TouchableOpacity
+            style={styles.toggleButton}
+            onPress={() => setIsCompound((prev) => !prev)}
+          >
+            <Text style={styles.toggleText}>
+              {isCompound ? T.createExercise.compound : T.createExercise.isolation}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Description */}
-        <Text style={styles.label}>Описание</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Описание техники выполнения..."
-          placeholderTextColor={colors.textSecondary}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
+          {/* Description */}
+          <Text style={styles.label}>{T.createExercise.descriptionLabel}</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder={T.createExercise.descriptionPlaceholder}
+            placeholderTextColor={colors.textSecondary}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, (!name.trim() || uploading) && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={!name.trim() || uploading}
-        >
-          {uploading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.saveText}>Сохранить упражнение</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[styles.saveButton, (!name.trim() || uploading) && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!name.trim() || uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveText}>{editingId ? T.createExercise.saveEdit : T.createExercise.saveNew}</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

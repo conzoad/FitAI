@@ -7,25 +7,37 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfileStore } from '../stores/useProfileStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { Goal, ActivityLevel, Gender } from '../models/types';
-import { GOAL_LABELS, ACTIVITY_LABELS, GENDER_LABELS } from '../utils/constants';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { useThemeStore, ThemeMode } from '../stores/useThemeStore';
+import { useLanguageStore, Language } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   isOnboarding?: boolean;
 }
 
+const MODEL_OPTIONS: { key: string; label: string }[] = [
+  { key: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { key: 'gemini-3-flash', label: 'Gemini 3 Flash' },
+  { key: 'gemma-3-27b-it', label: 'Gemma 3 27B' },
+];
+
 export default function ProfileScreen({ isOnboarding = false }: Props) {
   const colors = useColors();
+  const lang = useLanguageStore((s) => s.language);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const T = t(lang);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
-  const { profile, setProfile, calculateTargets, resetProfile } = useProfileStore();
+  const { profile, setProfile, calculateTargets, resetProfile, apiRequestCounts } = useProfileStore();
   const { user, logout } = useAuthStore();
   const currentTheme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
@@ -37,9 +49,11 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const [goal, setGoal] = useState<Goal>(profile.goal);
   const [activity, setActivity] = useState<ActivityLevel>(profile.activityLevel);
 
+  const currentModel = profile.geminiModel || 'gemini-2.5-flash';
+
   const handleSave = () => {
     if (!name.trim()) {
-      Alert.alert('Ошибка', 'Введите ваше имя');
+      Alert.alert(T.common.error, T.profile.nameError);
       return;
     }
     setProfile({
@@ -59,16 +73,21 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
   const activities: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
   const genders: Gender[] = ['male', 'female'];
   const themes: { key: ThemeMode; label: string }[] = [
-    { key: 'dark', label: 'Тёмная' },
-    { key: 'light', label: 'Светлая' },
-    { key: 'system', label: 'Системная' },
+    { key: 'dark', label: T.profile.themeDark },
+    { key: 'light', label: T.profile.themeLight },
+    { key: 'system', label: T.profile.themeSystem },
+  ];
+
+  const languages: { key: Language; label: string }[] = [
+    { key: 'ru', label: 'Русский' },
+    { key: 'en', label: 'English' },
   ];
 
   const handleLogout = () => {
-    Alert.alert('Выйти из аккаунта?', 'Данные профиля будут сброшены', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(T.profile.logoutTitle, T.profile.logoutMessage, [
+      { text: T.common.cancel, style: 'cancel' },
       {
-        text: 'Выйти',
+        text: T.profile.logoutConfirm,
         style: 'destructive',
         onPress: () => {
           resetProfile();
@@ -78,195 +97,261 @@ export default function ProfileScreen({ isOnboarding = false }: Props) {
     ]);
   };
 
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  const getRequestCount = (model: string): number => {
+    const entry = apiRequestCounts[model];
+    if (!entry || entry.date !== todayDate) return 0;
+    return entry.today;
+  };
+
   const initials = (name || 'U').charAt(0).toUpperCase();
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {/* Avatar & Header */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          <Text style={styles.title}>
-            {isOnboarding ? 'Добро пожаловать!' : name || 'Профиль'}
-          </Text>
-          {isOnboarding && (
-            <Text style={styles.subtitle}>
-              Расскажите о себе, чтобы мы рассчитали вашу норму КБЖУ
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          {/* Avatar & Header */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <Text style={styles.title}>
+              {isOnboarding ? T.profile.welcome : name || T.profile.profileTitle}
             </Text>
+            {isOnboarding && (
+              <Text style={styles.subtitle}>
+                {T.profile.onboardingSubtitle}
+              </Text>
+            )}
+          </View>
+
+          <Text style={styles.label}>{T.profile.nameLabel}</Text>
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder={T.profile.namePlaceholder}
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <Text style={styles.label}>{T.profile.genderLabel}</Text>
+          <View style={styles.row}>
+            {genders.map((g) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.chip, gender === g && styles.chipActive]}
+                onPress={() => setGender(g)}
+              >
+                <Text style={[styles.chipText, gender === g && styles.chipTextActive]}>
+                  {T.labels.genders[g]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.rowInputs}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{T.profile.ageLabel}</Text>
+              <TextInput
+                style={styles.input}
+                value={age}
+                onChangeText={setAge}
+                keyboardType="numeric"
+                placeholder="25"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{T.profile.heightLabel}</Text>
+              <TextInput
+                style={styles.input}
+                value={height}
+                onChangeText={setHeight}
+                keyboardType="numeric"
+                placeholder="175"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>{T.profile.weightLabel}</Text>
+              <TextInput
+                style={styles.input}
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+                placeholder="70"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.label}>{T.profile.goalLabel}</Text>
+          <View style={styles.row}>
+            {goals.map((g) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.chip, goal === g && styles.chipActive]}
+                onPress={() => setGoal(g)}
+              >
+                <Text style={[styles.chipText, goal === g && styles.chipTextActive]}>
+                  {T.labels.goals[g]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>{T.profile.activityLabel}</Text>
+          {activities.map((a) => (
+            <TouchableOpacity
+              key={a}
+              style={[styles.activityItem, activity === a && styles.activityActive]}
+              onPress={() => setActivity(a)}
+            >
+              <Text style={[styles.activityText, activity === a && styles.activityTextActive]}>
+                {T.labels.activities[a]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          {!isOnboarding && (
+            <>
+              {/* Language Selector */}
+              <Text style={styles.label}>{T.profile.languageLabel}</Text>
+              <View style={styles.row}>
+                {languages.map((l) => (
+                  <TouchableOpacity
+                    key={l.key}
+                    style={[styles.chip, lang === l.key && styles.chipActive]}
+                    onPress={() => setLanguage(l.key)}
+                  >
+                    <Text style={[styles.chipText, lang === l.key && styles.chipTextActive]}>
+                      {l.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Theme Selector */}
+              <Text style={styles.label}>{T.profile.themeLabel}</Text>
+              <View style={styles.row}>
+                {themes.map((th) => (
+                  <TouchableOpacity
+                    key={th.key}
+                    style={[styles.chip, currentTheme === th.key && styles.chipActive]}
+                    onPress={() => setTheme(th.key)}
+                  >
+                    <Text style={[styles.chipText, currentTheme === th.key && styles.chipTextActive]}>
+                      {th.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Model Selector */}
+              <Text style={styles.label}>{T.profile.modelLabel}</Text>
+              <View style={styles.row}>
+                {MODEL_OPTIONS.map((m) => (
+                  <TouchableOpacity
+                    key={m.key}
+                    style={[styles.chip, currentModel === m.key && styles.chipActiveModel]}
+                    onPress={() => setProfile({ geminiModel: m.key })}
+                  >
+                    <Text style={[styles.chipText, currentModel === m.key && styles.chipTextActive]}>
+                      {m.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Request Counter */}
+              <View style={styles.requestCountRow}>
+                {MODEL_OPTIONS.map((m) => {
+                  const count = getRequestCount(m.key);
+                  if (count === 0 && m.key !== currentModel) return null;
+                  return (
+                    <Text
+                      key={m.key}
+                      style={[
+                        styles.requestCountText,
+                        m.key === currentModel && { color: colors.workout },
+                      ]}
+                    >
+                      {m.label}: {count} {T.profile.requestsToday.toLowerCase()}
+                    </Text>
+                  );
+                })}
+              </View>
+
+              {/* API Key */}
+              <Text style={styles.label}>{T.profile.apiKeyLabel}</Text>
+              <Text style={styles.helperText}>
+                {T.profile.apiKeyHelper}
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={profile.geminiApiKey || ''}
+                onChangeText={(text) => setProfile({ geminiApiKey: text.trim() })}
+                placeholder="AIzaSy..."
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
           )}
-        </View>
 
-        <Text style={styles.label}>ИМЯ</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Ваше имя"
-          placeholderTextColor={colors.textMuted}
-        />
-
-        <Text style={styles.label}>ПОЛ</Text>
-        <View style={styles.row}>
-          {genders.map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.chip, gender === g && styles.chipActive]}
-              onPress={() => setGender(g)}
-            >
-              <Text style={[styles.chipText, gender === g && styles.chipTextActive]}>
-                {GENDER_LABELS[g]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.rowInputs}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>ВОЗРАСТ</Text>
-            <TextInput
-              style={styles.input}
-              value={age}
-              onChangeText={setAge}
-              keyboardType="numeric"
-              placeholder="25"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>РОСТ (СМ)</Text>
-            <TextInput
-              style={styles.input}
-              value={height}
-              onChangeText={setHeight}
-              keyboardType="numeric"
-              placeholder="175"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>ВЕС (КГ)</Text>
-            <TextInput
-              style={styles.input}
-              value={weight}
-              onChangeText={setWeight}
-              keyboardType="numeric"
-              placeholder="70"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <Text style={styles.label}>ЦЕЛЬ</Text>
-        <View style={styles.row}>
-          {goals.map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.chip, goal === g && styles.chipActive]}
-              onPress={() => setGoal(g)}
-            >
-              <Text style={[styles.chipText, goal === g && styles.chipTextActive]}>
-                {GOAL_LABELS[g]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>УРОВЕНЬ АКТИВНОСТИ</Text>
-        {activities.map((a) => (
-          <TouchableOpacity
-            key={a}
-            style={[styles.activityItem, activity === a && styles.activityActive]}
-            onPress={() => setActivity(a)}
-          >
-            <Text style={[styles.activityText, activity === a && styles.activityTextActive]}>
-              {ACTIVITY_LABELS[a]}
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveText}>
+              {isOnboarding ? T.profile.startButton : T.profile.saveButton}
             </Text>
           </TouchableOpacity>
-        ))}
 
-        {!isOnboarding && (
-          <>
-            <Text style={styles.label}>ТЕМА</Text>
-            <View style={styles.row}>
-              {themes.map((t) => (
-                <TouchableOpacity
-                  key={t.key}
-                  style={[styles.chip, currentTheme === t.key && styles.chipActive]}
-                  onPress={() => setTheme(t.key)}
-                >
-                  <Text style={[styles.chipText, currentTheme === t.key && styles.chipTextActive]}>
-                    {t.label}
+          {!isOnboarding && profile.targetCalories > 0 && (
+            <View style={styles.targetsCard}>
+              <Text style={styles.targetsTitle}>{T.profile.dailyTargets}</Text>
+              <View style={styles.targetRow}>
+                <View style={styles.targetItem}>
+                  <Text style={[styles.targetValue, { color: colors.calories }]}>{profile.targetCalories}</Text>
+                  <Text style={styles.targetLabel}>{T.common.kcal}</Text>
+                </View>
+                <View style={styles.targetItem}>
+                  <Text style={[styles.targetValue, { color: colors.proteins }]}>{profile.targetProteins}{T.common.g}</Text>
+                  <Text style={styles.targetLabel}>{T.profile.proteins}</Text>
+                </View>
+                <View style={styles.targetItem}>
+                  <Text style={[styles.targetValue, { color: colors.fats }]}>{profile.targetFats}{T.common.g}</Text>
+                  <Text style={styles.targetLabel}>{T.profile.fats}</Text>
+                </View>
+                <View style={styles.targetItem}>
+                  <Text style={[styles.targetValue, { color: colors.carbs }]}>{profile.targetCarbs}{T.common.g}</Text>
+                  <Text style={styles.targetLabel}>{T.profile.carbs}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {!isOnboarding && user && (
+            <View style={styles.accountSection}>
+              <Text style={styles.sectionTitle}>{T.profile.account}</Text>
+              <View style={styles.accountCard}>
+                <Text style={styles.accountEmail}>{user.email}</Text>
+                <View style={styles.providerBadge}>
+                  <Text style={styles.providerText}>
+                    {user.provider === 'google' ? 'Google' : 'Email'}
                   </Text>
-                </TouchableOpacity>
-              ))}
+                </View>
+              </View>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Text style={styles.logoutText}>{T.profile.logout}</Text>
+              </TouchableOpacity>
             </View>
+          )}
 
-            <Text style={styles.label}>GEMINI API КЛЮЧ (опционально)</Text>
-            <Text style={styles.helperText}>
-              Укажите свой ключ, чтобы не использовать общий лимит. Получить можно на ai.google.dev
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={profile.geminiApiKey || ''}
-              onChangeText={(text) => setProfile({ geminiApiKey: text.trim() })}
-              placeholder="AIzaSy..."
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </>
-        )}
-
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveText}>
-            {isOnboarding ? 'Начать' : 'Сохранить'}
-          </Text>
-        </TouchableOpacity>
-
-        {!isOnboarding && profile.targetCalories > 0 && (
-          <View style={styles.targetsCard}>
-            <Text style={styles.targetsTitle}>Ваша дневная норма</Text>
-            <View style={styles.targetRow}>
-              <View style={styles.targetItem}>
-                <Text style={[styles.targetValue, { color: colors.calories }]}>{profile.targetCalories}</Text>
-                <Text style={styles.targetLabel}>ккал</Text>
-              </View>
-              <View style={styles.targetItem}>
-                <Text style={[styles.targetValue, { color: colors.proteins }]}>{profile.targetProteins}г</Text>
-                <Text style={styles.targetLabel}>белки</Text>
-              </View>
-              <View style={styles.targetItem}>
-                <Text style={[styles.targetValue, { color: colors.fats }]}>{profile.targetFats}г</Text>
-                <Text style={styles.targetLabel}>жиры</Text>
-              </View>
-              <View style={styles.targetItem}>
-                <Text style={[styles.targetValue, { color: colors.carbs }]}>{profile.targetCarbs}г</Text>
-                <Text style={styles.targetLabel}>углев.</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {!isOnboarding && user && (
-          <View style={styles.accountSection}>
-            <Text style={styles.sectionTitle}>Аккаунт</Text>
-            <View style={styles.accountCard}>
-              <Text style={styles.accountEmail}>{user.email}</Text>
-              <View style={styles.providerBadge}>
-                <Text style={styles.providerText}>
-                  {user.provider === 'google' ? 'Google' : 'Email'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>Выйти из аккаунта</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -370,6 +455,15 @@ function getStyles(c: typeof darkColors) {
       backgroundColor: c.primary,
       borderColor: c.primary,
       shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    chipActiveModel: {
+      backgroundColor: c.workout,
+      borderColor: c.workout,
+      shadowColor: c.workout,
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
@@ -501,6 +595,14 @@ function getStyles(c: typeof darkColors) {
       color: c.error,
       fontSize: 16,
       fontWeight: '600',
+    },
+    requestCountRow: {
+      marginTop: 8,
+      gap: 4,
+    },
+    requestCountText: {
+      fontSize: 13,
+      color: c.textMuted,
     },
   });
 }

@@ -7,10 +7,11 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
-import { MUSCLE_LABELS } from '../utils/constants';
 import SetRow from '../components/SetRow';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Route = RouteProp<WorkoutStackParamList, 'WorkoutDetail'>;
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'WorkoutDetail'>;
@@ -18,6 +19,8 @@ type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'WorkoutDetail'>;
 export default function WorkoutDetailScreen() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
@@ -34,16 +37,16 @@ export default function WorkoutDetailScreen() {
   if (!session) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.errorText}>Тренировка не найдена</Text>
+        <Text style={styles.errorText}>{T.workoutDetail.notFound}</Text>
       </SafeAreaView>
     );
   }
 
   const handleDelete = () => {
-    Alert.alert('Удалить тренировку?', 'Это действие нельзя отменить.', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(T.workoutDetail.deleteTitle, T.workoutDetail.deleteMessage, [
+      { text: T.common.cancel, style: 'cancel' },
       {
-        text: 'Удалить',
+        text: T.workoutDetail.deleteConfirm,
         style: 'destructive',
         onPress: () => {
           deleteSession(date, sessionId);
@@ -62,17 +65,17 @@ export default function WorkoutDetailScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>Тренировка</Text>
+        <Text style={styles.title}>{T.workoutDetail.title}</Text>
         <Text style={styles.time}>
-          {new Date(session.startTime).toLocaleTimeString('ru-RU', {
+          {new Date(session.startTime).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', {
             hour: '2-digit',
             minute: '2-digit',
           })}
           {session.endTime &&
-            ` — ${new Date(session.endTime).toLocaleTimeString('ru-RU', {
+            ` — ${new Date(session.endTime).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', {
               hour: '2-digit',
               minute: '2-digit',
             })}`}
@@ -81,23 +84,23 @@ export default function WorkoutDetailScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{session.duration}</Text>
-            <Text style={styles.statLabel}>мин</Text>
+            <Text style={styles.statLabel}>{T.workoutDetail.min}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{session.exercises.length}</Text>
-            <Text style={styles.statLabel}>упражн.</Text>
+            <Text style={styles.statLabel}>{T.workoutDetail.exercises}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{totalSets}</Text>
-            <Text style={styles.statLabel}>подходов</Text>
+            <Text style={styles.statLabel}>{T.workoutDetail.sets}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statValue, { color: colors.volume }]}>
               {session.totalVolume >= 1000
-                ? `${(session.totalVolume / 1000).toFixed(1)}т`
+                ? `${(session.totalVolume / 1000).toFixed(1)}${T.workoutDetail.tons}`
                 : `${session.totalVolume}`}
             </Text>
-            <Text style={styles.statLabel}>объём (кг)</Text>
+            <Text style={styles.statLabel}>{T.workoutDetail.volume}</Text>
           </View>
         </View>
 
@@ -124,7 +127,7 @@ export default function WorkoutDetailScreen() {
                   <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
                   {muscles && (
                     <Text style={styles.muscleText}>
-                      {muscles.primary.map((m) => MUSCLE_LABELS[m] || m).join(', ')}
+                      {muscles.primary.map((m) => T.labels.muscles[m] || m).join(', ')}
                     </Text>
                   )}
                 </View>
@@ -140,13 +143,13 @@ export default function WorkoutDetailScreen() {
 
         {session.notes && (
           <View style={styles.notesBlock}>
-            <Text style={styles.notesTitle}>Заметки</Text>
+            <Text style={styles.notesTitle}>{T.workoutDetail.notes}</Text>
             <Text style={styles.notesText}>{session.notes}</Text>
           </View>
         )}
 
         <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteText}>Удалить тренировку</Text>
+          <Text style={styles.deleteText}>{T.workoutDetail.deleteButton}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -4,6 +4,8 @@ import { LineChart } from 'react-native-chart-kit';
 import { WorkoutSet } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface WorkoutProgressChartProps {
   history: { date: string; sets: WorkoutSet[] }[];
@@ -12,15 +14,19 @@ interface WorkoutProgressChartProps {
 
 const screenWidth = Dimensions.get('window').width - 40;
 
-export default function WorkoutProgressChart({ history, title = 'Прогресс' }: WorkoutProgressChartProps) {
+export default function WorkoutProgressChart({ history, title }: WorkoutProgressChartProps) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
+  const displayTitle = title || T.components.progress;
 
   if (history.length < 2) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.noData}>Нужно минимум 2 тренировки для графика</Text>
+        <Text style={styles.title}>{displayTitle}</Text>
+        <Text style={styles.noData}>{T.components.needMinTrainings}</Text>
       </View>
     );
   }
@@ -46,7 +52,7 @@ export default function WorkoutProgressChart({ history, title = 'Прогрес�
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Макс. вес (кг)</Text>
+      <Text style={styles.title}>{T.components.maxWeightKg}</Text>
       <LineChart
         data={{
           labels,
@@ -75,7 +81,7 @@ export default function WorkoutProgressChart({ history, title = 'Прогрес�
         fromZero
       />
 
-      <Text style={styles.title}>Объём (кг)</Text>
+      <Text style={styles.title}>{T.components.volumeKg}</Text>
       <LineChart
         data={{
           labels,

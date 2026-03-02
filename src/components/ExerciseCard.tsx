@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { Exercise } from '../models/types';
-import { MUSCLE_GROUP_LABELS, MUSCLE_GROUP_ICONS, EQUIPMENT_LABELS, EXERCISE_LEVEL_LABELS } from '../utils/constants';
+import { MUSCLE_GROUP_ICONS } from '../utils/constants';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -17,6 +19,8 @@ export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [gifLoading, setGifLoading] = useState(true);
   const [gifError, setGifError] = useState(false);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   return (
     <TouchableOpacity
@@ -50,17 +54,17 @@ export default function ExerciseCard({ exercise, onPress, colorTag, isFavorite }
           <Text style={styles.name} numberOfLines={1}>{exercise.name}</Text>
         </View>
         <Text style={styles.meta} numberOfLines={1}>
-          {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · {EQUIPMENT_LABELS[exercise.equipment]}
+          {T.labels.muscleGroups[exercise.muscleGroup]} · {T.labels.equipment[exercise.equipment]}
         </Text>
       </View>
       <View style={styles.badges}>
         {exercise.isCompound && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Базовое</Text>
+            <Text style={styles.badgeText}>{T.components.compound}</Text>
           </View>
         )}
         <View style={[styles.levelBadge, styles[`level_${exercise.level}`]]}>
-          <Text style={styles.levelText}>{EXERCISE_LEVEL_LABELS[exercise.level]}</Text>
+          <Text style={styles.levelText}>{T.labels.exerciseLevels[exercise.level]}</Text>
         </View>
       </View>
     </TouchableOpacity>

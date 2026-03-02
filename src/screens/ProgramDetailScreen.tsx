@@ -15,9 +15,10 @@ import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById, getAllExercises } from '../services/exerciseDatabase';
-import { MUSCLE_LABELS } from '../utils/constants';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Route = RouteProp<WorkoutStackParamList, 'ProgramDetail'>;
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'ProgramDetail'>;
@@ -25,6 +26,8 @@ type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'ProgramDetail'>;
 export default function ProgramDetailScreen() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
@@ -41,16 +44,16 @@ export default function ProgramDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.errorText}>Программа не найдена</Text>
+        <Text style={styles.errorText}>{T.programDetail.notFound}</Text>
       </SafeAreaView>
     );
   }
 
   const handleStart = () => {
     if (activeWorkout) {
-      Alert.alert('Внимание', 'У вас уже есть активная тренировка. Завершите или отмените её.');
+      Alert.alert(T.programDetail.warningTitle, T.programDetail.activeWarning);
       return;
     }
     startWorkoutFromProgram(program, allExercises);
@@ -61,11 +64,11 @@ export default function ProgramDetailScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
         <Text style={styles.title}>{program.name}</Text>
-        <Text style={styles.meta}>{program.exercises.length} упражнений</Text>
+        <Text style={styles.meta}>{program.exercises.length} {T.programDetail.exercises}</Text>
 
         {program.exercises.map((pe, idx) => {
           const exerciseData = getExerciseById(pe.exerciseId, customExercises);
@@ -97,7 +100,7 @@ export default function ProgramDetailScreen() {
                   <View style={styles.muscleRow}>
                     {muscles.primary.map((m) => (
                       <View key={m} style={styles.muscleChip}>
-                        <Text style={styles.muscleChipText}>{MUSCLE_LABELS[m] || m}</Text>
+                        <Text style={styles.muscleChipText}>{T.labels.muscles[m] || m}</Text>
                       </View>
                     ))}
                   </View>
@@ -111,7 +114,7 @@ export default function ProgramDetailScreen() {
 
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-          <Text style={styles.startButtonText}>Начать тренировку</Text>
+          <Text style={styles.startButtonText}>{T.programDetail.startWorkout}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS } from 'date-fns/locale';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { dateKey, getDaysArray } from '../utils/dateHelpers';
+import { useLanguageStore } from '../stores/useLanguageStore';
 
 interface Props {
   selectedDate: string;
@@ -18,6 +19,8 @@ export default function DaySelector({ selectedDate, onSelect }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
+  const lang = useLanguageStore((s) => s.language);
+  const locale = lang === 'ru' ? ru : enUS;
 
   useEffect(() => {
     const index = DAYS.findIndex((d) => dateKey(d) === selectedDate);
@@ -41,7 +44,7 @@ export default function DaySelector({ selectedDate, onSelect }: Props) {
         const key = dateKey(day);
         const isSelected = key === selectedDate;
         const isToday = key === todayStr;
-        const weekday = format(day, 'EEEEEE', { locale: ru });
+        const weekday = format(day, 'EEEEEE', { locale });
         const dayNum = format(day, 'd');
 
         return (

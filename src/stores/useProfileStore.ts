@@ -35,16 +35,19 @@ const DEFAULT_PROFILE: UserProfile = {
   isOnboarded: false,
   weightHistory: [],
   geminiApiKey: '',
+  geminiModel: 'gemini-2.5-flash',
 };
 
 interface ProfileState {
   profile: UserProfile;
   _hasHydrated: boolean;
+  apiRequestCounts: Record<string, { today: number; date: string }>;
   setProfile: (partial: Partial<UserProfile>) => void;
   calculateTargets: () => void;
   resetProfile: () => void;
   addWeightEntry: (weight: number) => void;
   removeWeightEntry: (date: string) => void;
+  incrementApiCount: (model: string) => void;
 }
 
 export const useProfileStore = create<ProfileState>()(
@@ -52,6 +55,7 @@ export const useProfileStore = create<ProfileState>()(
     (set, get) => ({
       profile: { ...DEFAULT_PROFILE },
       _hasHydrated: false,
+      apiRequestCounts: {},
 
       setProfile: (partial) =>
         set((state) => ({
@@ -119,6 +123,19 @@ export const useProfileStore = create<ProfileState>()(
             weightHistory: (state.profile.weightHistory || []).filter((e) => e.date !== date),
           },
         })),
+
+      incrementApiCount: (model: string) =>
+        set((state) => {
+          const todayDate = new Date().toISOString().split('T')[0];
+          const current = state.apiRequestCounts[model];
+          const count = current && current.date === todayDate ? current.today + 1 : 1;
+          return {
+            apiRequestCounts: {
+              ...state.apiRequestCounts,
+              [model]: { today: count, date: todayDate },
+            },
+          };
+        }),
     }),
     {
       name: 'profile-storage',

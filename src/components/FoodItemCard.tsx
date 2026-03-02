@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface FoodItemData {
   name: string;
@@ -29,12 +31,14 @@ function extractNumericAmount(amount: string): string {
 }
 
 function isEstimate(amount: string): boolean {
-  return amount.includes('~') || amount.toLowerCase().includes('оценка');
+  return amount.includes('~') || amount.toLowerCase().includes('оценка') || amount.toLowerCase().includes('estimate');
 }
 
 export default function FoodItemCard({ item, editable = false, onUpdate, onDelete }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   return (
     <View style={styles.card}>
@@ -48,18 +52,18 @@ export default function FoodItemCard({ item, editable = false, onUpdate, onDelet
               onEndEditing={(e) => {
                 const val = e.nativeEvent.text.trim();
                 if (val) {
-                  onUpdate?.('amount', val + 'г');
+                  onUpdate?.('amount', val + T.common.g);
                 }
               }}
               keyboardType="numeric"
-              placeholder="Кол-во"
+              placeholder={T.components.amount}
               placeholderTextColor={colors.textMuted}
             />
           ) : (
             <View>
               <Text style={styles.amount}>{item.amount}</Text>
               {isEstimate(item.amount) && (
-                <Text style={styles.estimateLabel}>оценка по фото</Text>
+                <Text style={styles.estimateLabel}>{T.components.photoEstimate}</Text>
               )}
             </View>
           )}
@@ -73,49 +77,49 @@ export default function FoodItemCard({ item, editable = false, onUpdate, onDelet
       <View style={styles.macros}>
         <View style={[styles.macroPill, { backgroundColor: colors.calories + '18' }]}>
           <Text style={[styles.macroItem, { color: colors.calories }]}>
-            {Math.round(item.calories)} ккал
+            {Math.round(item.calories)} {T.common.kcal}
           </Text>
         </View>
         <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
           <Text style={[styles.macroItem, { color: colors.proteins }]}>
-            Б:{item.proteins}г
+            {T.components.P}:{item.proteins}{T.common.g}
           </Text>
         </View>
         <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
           <Text style={[styles.macroItem, { color: colors.fats }]}>
-            Ж:{item.fats}г
+            {T.components.F}:{item.fats}{T.common.g}
           </Text>
         </View>
         <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
           <Text style={[styles.macroItem, { color: colors.carbs }]}>
-            У:{item.carbs}г
+            {T.components.C}:{item.carbs}{T.common.g}
           </Text>
         </View>
         {item.sugar != null && (
           <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
             <Text style={[styles.macroItem, { color: colors.carbs }]}>
-              Сахар:{item.sugar}г
+              {T.components.sugarLabel}:{item.sugar}{T.common.g}
             </Text>
           </View>
         )}
         {item.salt != null && (
           <View style={[styles.macroPill, { backgroundColor: colors.textSecondary + '18' }]}>
             <Text style={[styles.macroItem, { color: colors.textSecondary }]}>
-              Соль:{item.salt}г
+              {T.components.saltLabel}:{item.salt}{T.common.g}
             </Text>
           </View>
         )}
         {item.glycemicIndex != null && (
           <View style={[styles.macroPill, { backgroundColor: colors.calories + '18' }]}>
             <Text style={[styles.macroItem, { color: colors.calories }]}>
-              ГИ:{item.glycemicIndex}
+              {T.components.gi}:{item.glycemicIndex}
             </Text>
           </View>
         )}
         {item.insulinIndex != null && (
           <View style={[styles.macroPill, { backgroundColor: colors.calories + '18' }]}>
             <Text style={[styles.macroItem, { color: colors.calories }]}>
-              ИИ:{item.insulinIndex}
+              {T.components.ii}:{item.insulinIndex}
             </Text>
           </View>
         )}

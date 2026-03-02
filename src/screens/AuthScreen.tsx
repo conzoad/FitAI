@@ -16,6 +16,8 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 
@@ -34,6 +36,8 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
 
@@ -53,11 +57,11 @@ export default function AuthScreen() {
 
   const handleEmailAuth = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Ошибка', 'Заполните все поля');
+      Alert.alert(T.common.error, T.auth.fieldsError);
       return;
     }
     if (mode === 'register' && !name.trim()) {
-      Alert.alert('Ошибка', 'Введите ваше имя');
+      Alert.alert(T.common.error, T.auth.nameError);
       return;
     }
 
@@ -69,7 +73,7 @@ export default function AuthScreen() {
         await login(email, password);
       }
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message || 'Что-то пошло не так');
+      Alert.alert(T.common.error, e.message || T.auth.genericError);
     } finally {
       setLoading(false);
     }
@@ -78,8 +82,8 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     if (!googleClientId || googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
       Alert.alert(
-        'Настройка Google',
-        'Для входа через Google необходимо настроить GOOGLE_CLIENT_ID в файле .env'
+        T.auth.googleSetupTitle,
+        T.auth.googleSetupMessage
       );
       return;
     }
@@ -93,7 +97,7 @@ export default function AuthScreen() {
         );
       }
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message || 'Не удалось войти через Google');
+      Alert.alert(T.common.error, e.message || T.auth.genericError);
     }
   };
 
@@ -110,7 +114,7 @@ export default function AuthScreen() {
             </View>
             <Text style={styles.appName}>FitAI</Text>
             <Text style={styles.subtitle}>
-              {mode === 'login' ? 'Добро пожаловать обратно' : 'Создайте аккаунт'}
+              {mode === 'login' ? T.auth.welcomeBack : T.auth.createAccount}
             </Text>
           </View>
 
@@ -120,7 +124,7 @@ export default function AuthScreen() {
               onPress={() => setMode('login')}
             >
               <Text style={[styles.modeText, mode === 'login' && styles.modeTextActive]}>
-                Вход
+                {T.auth.login}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -128,19 +132,19 @@ export default function AuthScreen() {
               onPress={() => setMode('register')}
             >
               <Text style={[styles.modeText, mode === 'register' && styles.modeTextActive]}>
-                Регистрация
+                {T.auth.register}
               </Text>
             </TouchableOpacity>
           </View>
 
           {mode === 'register' && (
             <>
-              <Text style={styles.label}>ИМЯ</Text>
+              <Text style={styles.label}>{T.auth.nameLabel}</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Ваше имя"
+                placeholder={T.auth.namePlaceholder}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="words"
               />
@@ -159,12 +163,12 @@ export default function AuthScreen() {
             autoCorrect={false}
           />
 
-          <Text style={styles.label}>ПАРОЛЬ</Text>
+          <Text style={styles.label}>{T.auth.passwordLabel}</Text>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder={mode === 'register' ? 'Минимум 6 символов' : 'Ваш пароль'}
+            placeholder={mode === 'register' ? T.auth.passwordPlaceholderRegister : T.auth.passwordPlaceholderLogin}
             placeholderTextColor={colors.textMuted}
             secureTextEntry
           />
@@ -178,14 +182,14 @@ export default function AuthScreen() {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {mode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+                {mode === 'login' ? T.auth.loginButton : T.auth.registerButton}
               </Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>или</Text>
+            <Text style={styles.dividerText}>{T.auth.or}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -194,7 +198,7 @@ export default function AuthScreen() {
             onPress={handleGoogleSignIn}
           >
             <Text style={styles.googleIcon}>G</Text>
-            <Text style={styles.googleText}>Войти через Google</Text>
+            <Text style={styles.googleText}>{T.auth.googleLogin}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -7,33 +7,23 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import { getAllExercises } from '../services/exerciseDatabase';
-import { EQUIPMENT_LABELS } from '../utils/constants';
 import { WorkoutStackParamList, Exercise, ProgramExercise, MuscleGroup, ExerciseLevel } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'CreateProgram'>;
 type SortMode = 'default' | 'name' | 'level' | 'category';
-
-const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  chest: 'Грудь',
-  back: 'Спина',
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  legs: 'Ноги',
-  glutes: 'Ягодицы',
-  abs: 'Пресс',
-  cardio: 'Кардио',
-  fullBody: 'Всё тело',
-};
 
 interface SelectedExercise extends ProgramExercise {
   name: string;
@@ -55,6 +45,8 @@ export default function CreateProgramScreen() {
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const allExercises = getAllExercises(customExercises);
 
@@ -123,11 +115,11 @@ export default function CreateProgramScreen() {
 
   const handleSave = () => {
     if (!name.trim()) {
-      Alert.alert('Ошибка', 'Введите название программы');
+      Alert.alert(T.common.error, T.createProgram.nameError);
       return;
     }
     if (selectedExercises.length === 0) {
-      Alert.alert('Ошибка', 'Добавьте хотя бы одно упражнение');
+      Alert.alert(T.common.error, T.createProgram.exercisesError);
       return;
     }
     addProgram(
@@ -138,31 +130,36 @@ export default function CreateProgramScreen() {
         targetReps,
       }))
     );
-    Alert.alert('Готово', 'Программа сохранена');
+    Alert.alert(T.createProgram.savedTitle, T.createProgram.saved);
     navigation.goBack();
   };
 
-  const muscleGroups: (MuscleGroup | 'all')[] = ['all', ...Object.keys(MUSCLE_GROUP_LABELS) as MuscleGroup[]];
+  const muscleGroups: (MuscleGroup | 'all')[] = ['all', ...Object.keys(T.labels.muscleGroups) as MuscleGroup[]];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>Новая программа</Text>
+        <Text style={styles.title}>{T.createProgram.title}</Text>
 
-        <Text style={styles.label}>Название</Text>
+        <Text style={styles.label}>{T.createProgram.nameLabel}</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="Push/Pull/Legs, Грудь+Трицепс..."
+          placeholder={T.createProgram.namePlaceholder}
           placeholderTextColor={colors.textSecondary}
         />
 
-        <Text style={styles.label}>Упражнения ({selectedExercises.length})</Text>
+        <Text style={styles.label}>{T.createProgram.exercisesLabel} ({selectedExercises.length})</Text>
 
         {selectedExercises.map((ex, idx) => (
           <View key={ex.exerciseId} style={styles.exerciseItem}>
@@ -175,7 +172,7 @@ export default function CreateProgramScreen() {
             </View>
             <View style={styles.setsRepsRow}>
               <View style={styles.setsRepsGroup}>
-                <Text style={styles.setsRepsLabel}>Подходов</Text>
+                <Text style={styles.setsRepsLabel}>{T.createProgram.setsLabel}</Text>
                 <TextInput
                   style={styles.setsRepsInput}
                   value={String(ex.targetSets)}
@@ -186,7 +183,7 @@ export default function CreateProgramScreen() {
               </View>
               <Text style={styles.separator}>×</Text>
               <View style={styles.setsRepsGroup}>
-                <Text style={styles.setsRepsLabel}>Повторений</Text>
+                <Text style={styles.setsRepsLabel}>{T.createProgram.repsLabel}</Text>
                 <TextInput
                   style={styles.setsRepsInput}
                   value={ex.targetReps}
@@ -203,23 +200,23 @@ export default function CreateProgramScreen() {
             style={styles.addExerciseButton}
             onPress={() => setShowPicker(true)}
           >
-            <Text style={styles.addExerciseText}>+ Добавить упражнение</Text>
+            <Text style={styles.addExerciseText}>{T.createProgram.addExercise}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.pickerContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Поиск упражнений..."
+              placeholder={T.createProgram.searchPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={search}
               onChangeText={setSearch}
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortRow}>
               {([
-                ['default', 'По умолчанию'],
-                ['name', 'По имени'],
-                ['level', 'По уровню'],
-                ['category', 'По виду'],
+                ['default', T.createProgram.sortDefault],
+                ['name', T.createProgram.sortName],
+                ['level', T.createProgram.sortLevel],
+                ['category', T.createProgram.sortCategory],
               ] as [SortMode, string][]).map(([key, label]) => (
                 <TouchableOpacity
                   key={key}
@@ -240,7 +237,7 @@ export default function CreateProgramScreen() {
                   onPress={() => setFilterGroup(g)}
                 >
                   <Text style={[styles.filterChipText, filterGroup === g && styles.filterChipTextActive]}>
-                    {g === 'all' ? 'Все' : MUSCLE_GROUP_LABELS[g]}
+                    {g === 'all' ? T.createProgram.all : T.labels.muscleGroups[g]}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -266,7 +263,7 @@ export default function CreateProgramScreen() {
                         </Text>
                       </View>
                       <Text style={styles.pickerItemMeta}>
-                        {MUSCLE_GROUP_LABELS[ex.muscleGroup]} · {EQUIPMENT_LABELS[ex.equipment]}
+                        {T.labels.muscleGroups[ex.muscleGroup]} · {T.labels.equipment[ex.equipment]}
                       </Text>
                     </View>
                     {isSelected && <Text style={styles.checkMark}>✓</Text>}
@@ -278,17 +275,18 @@ export default function CreateProgramScreen() {
               style={styles.closePicker}
               onPress={() => setShowPicker(false)}
             >
-              <Text style={styles.closePickerText}>Закрыть</Text>
+              <Text style={styles.closePickerText}>{T.createProgram.closePicker}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {selectedExercises.length > 0 && (
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>Сохранить программу</Text>
+            <Text style={styles.saveText}>{T.createProgram.save}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

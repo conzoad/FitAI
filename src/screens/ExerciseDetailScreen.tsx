@@ -2,30 +2,27 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
 import { WorkoutStackParamList } from '../models/types';
 import { getExerciseById } from '../services/exerciseDatabase';
-import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, EXERCISE_CATEGORY_LABELS, EXERCISE_FORCE_LABELS, EXERCISE_LEVEL_LABELS, COLOR_TAG_PALETTE } from '../utils/constants';
+import { COLOR_TAG_PALETTE } from '../utils/constants';
 import { computeExerciseRecords, computeSessionMetrics } from '../utils/calculations';
 import ExerciseProgressCharts from '../components/ExerciseProgressCharts';
 import RecordsCard from '../components/RecordsCard';
 import MuscleMapDiagram from '../components/MuscleMapDiagram';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Route = RouteProp<WorkoutStackParamList, 'ExerciseDetail'>;
 type TabKey = 'progress' | 'records' | 'history';
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'progress', label: 'Прогресс' },
-  { key: 'records', label: 'Рекорды' },
-  { key: 'history', label: 'История' },
-];
-
 export default function ExerciseDetailScreen() {
   const route = useRoute<Route>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<WorkoutStackParamList>>();
   const { exerciseId } = route.params;
   const sessions = useWorkoutStore((s) => s.sessions);
   const [gifLoading, setGifLoading] = useState(true);
@@ -43,6 +40,14 @@ export default function ExerciseDetailScreen() {
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: 'progress', label: T.exercise.progress },
+    { key: 'records', label: T.exercise.records },
+    { key: 'history', label: T.exercise.history },
+  ];
 
   const exercise = useMemo(() => getExerciseById(exerciseId, customExercises), [exerciseId, customExercises]);
 
@@ -69,7 +74,7 @@ export default function ExerciseDetailScreen() {
   if (!exercise) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Text style={styles.errorText}>Упражнение не найдено</Text>
+        <Text style={styles.errorText}>{T.exercise.notFound}</Text>
       </SafeAreaView>
     );
   }
@@ -78,7 +83,7 @@ export default function ExerciseDetailScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
         <View style={styles.titleRow}>
@@ -105,27 +110,36 @@ export default function ExerciseDetailScreen() {
           ))}
         </View>
 
+        {exercise.isCustom && (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('CreateExercise', { exerciseId: exercise.id })}
+          >
+            <Text style={styles.editButtonText}>{T.exercise.edit}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Meta chips */}
         <View style={styles.metaRow}>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</Text>
+            <Text style={styles.metaText}>{T.labels.muscleGroups[exercise.muscleGroup]}</Text>
           </View>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{EQUIPMENT_LABELS[exercise.equipment]}</Text>
+            <Text style={styles.metaText}>{T.labels.equipment[exercise.equipment]}</Text>
           </View>
           <View style={[styles.metaChip, { backgroundColor: colors.workoutLight }]}>
             <Text style={[styles.metaText, { color: colors.workout }]}>
-              {exercise.isCompound ? 'Базовое' : 'Изолирующее'}
+              {exercise.isCompound ? T.exercise.compound : T.exercise.isolation}
             </Text>
           </View>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{EXERCISE_CATEGORY_LABELS[exercise.category]}</Text>
+            <Text style={styles.metaText}>{T.labels.exerciseCategories[exercise.category]}</Text>
           </View>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{EXERCISE_FORCE_LABELS[exercise.force]}</Text>
+            <Text style={styles.metaText}>{T.labels.exerciseForce[exercise.force]}</Text>
           </View>
           <View style={styles.metaChip}>
-            <Text style={styles.metaText}>{EXERCISE_LEVEL_LABELS[exercise.level]}</Text>
+            <Text style={styles.metaText}>{T.labels.exerciseLevels[exercise.level]}</Text>
           </View>
         </View>
 
@@ -160,7 +174,7 @@ export default function ExerciseDetailScreen() {
 
         {exercise.targetMuscles && (
           <>
-            <Text style={styles.sectionTitle}>Задействованные мышцы</Text>
+            <Text style={styles.sectionTitle}>{T.exercise.targetMuscles}</Text>
             <MuscleMapDiagram
               primary={exercise.targetMuscles.primary}
               secondary={exercise.targetMuscles.secondary}
@@ -195,7 +209,7 @@ export default function ExerciseDetailScreen() {
         {activeTab === 'history' && (
           <View style={styles.historySection}>
             <View style={styles.historyHeader}>
-              <Text style={styles.historyCount}>{history.length} тренировок</Text>
+              <Text style={styles.historyCount}>{history.length} {T.exercise.trainingCount}</Text>
             </View>
 
             {history.length > 0 ? (
@@ -205,7 +219,7 @@ export default function ExerciseDetailScreen() {
                 .map((h, idx) => (
                   <View key={idx} style={styles.historyItem}>
                     <Text style={styles.historyDate}>
-                      {new Date(h.date).toLocaleDateString('ru-RU', {
+                      {new Date(h.date).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', {
                         day: 'numeric',
                         month: 'short',
                       })}
@@ -222,7 +236,7 @@ export default function ExerciseDetailScreen() {
                   </View>
                 ))
             ) : (
-              <Text style={styles.noHistory}>Нет данных. Выполните это упражнение в тренировке!</Text>
+              <Text style={styles.noHistory}>{T.exercise.noDataHint}</Text>
             )}
           </View>
         )}
@@ -288,6 +302,19 @@ function getStyles(c: typeof darkColors) {
     colorCircleActive: {
       borderColor: '#FFFFFF',
       borderWidth: 3,
+    },
+    editButton: {
+      backgroundColor: 'rgba(162, 155, 254, 0.12)',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      alignSelf: 'flex-start',
+      marginBottom: 14,
+    },
+    editButtonText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: c.workout,
     },
     metaRow: {
       flexDirection: 'row',

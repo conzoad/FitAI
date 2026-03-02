@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,6 +13,8 @@ import EmptyState from '../components/EmptyState';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { useProfileStore } from '../stores/useProfileStore';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 type Nav = NativeStackNavigationProp<DiaryStackParamList>;
 
@@ -22,6 +24,8 @@ export default function DiaryScreen() {
   const entries = useDiaryStore((s) => s.entries);
   const removeMeal = useDiaryStore((s) => s.removeMeal);
   const targetCalories = useProfileStore((s) => s.profile.targetCalories);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -34,10 +38,10 @@ export default function DiaryScreen() {
   const mealGroups: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
   const handleDelete = (mealId: string) => {
-    Alert.alert('Удалить?', 'Удалить этот приём пищи?', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(T.diary.deleteTitle, T.diary.deleteMessage, [
+      { text: T.common.cancel, style: 'cancel' },
       {
-        text: 'Удалить',
+        text: T.common.delete,
         style: 'destructive',
         onPress: () => removeMeal(selectedDate, mealId),
       },
@@ -46,7 +50,7 @@ export default function DiaryScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Text style={styles.title}>Дневник питания</Text>
+      <Text style={styles.title}>{T.diary.title}</Text>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <NutritionCalendar
           entries={entries}
@@ -57,22 +61,22 @@ export default function DiaryScreen() {
 
         <View style={styles.dailyTotal}>
           <Text style={styles.dailyCalories}>
-            {Math.round(entry.totalMacros.calories)} ккал
+            {Math.round(entry.totalMacros.calories)} {T.common.kcal}
           </Text>
           <View style={styles.dailyMacrosRow}>
             <View style={[styles.macroPill, { backgroundColor: colors.proteins + '18' }]}>
               <Text style={[styles.macroText, { color: colors.proteins }]}>
-                Б:{Math.round(entry.totalMacros.proteins)}г
+                {T.diary.P}:{Math.round(entry.totalMacros.proteins)}{T.common.g}
               </Text>
             </View>
             <View style={[styles.macroPill, { backgroundColor: colors.fats + '18' }]}>
               <Text style={[styles.macroText, { color: colors.fats }]}>
-                Ж:{Math.round(entry.totalMacros.fats)}г
+                {T.diary.F}:{Math.round(entry.totalMacros.fats)}{T.common.g}
               </Text>
             </View>
             <View style={[styles.macroPill, { backgroundColor: colors.carbs + '18' }]}>
               <Text style={[styles.macroText, { color: colors.carbs }]}>
-                У:{Math.round(entry.totalMacros.carbs)}г
+                {T.diary.C}:{Math.round(entry.totalMacros.carbs)}{T.common.g}
               </Text>
             </View>
           </View>
@@ -81,8 +85,8 @@ export default function DiaryScreen() {
         {entry.meals.length === 0 ? (
           <EmptyState
             icon="📝"
-            title="Нет записей"
-            subtitle="Добавьте приём пищи через вкладку +"
+            title={T.diary.emptyTitle}
+            subtitle={T.diary.emptySubtitle}
           />
         ) : (
           mealGroups.map((type) => {
@@ -111,6 +115,13 @@ export default function DiaryScreen() {
           })
         )}
       </ScrollView>
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('AddMeal')}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -174,6 +185,28 @@ function getStyles(c: typeof darkColors) {
       fontWeight: '700',
       color: c.text,
       marginBottom: 10,
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 8,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+    },
+    fabText: {
+      color: '#FFFFFF',
+      fontSize: 30,
+      fontWeight: '600',
+      lineHeight: 32,
     },
   });
 }

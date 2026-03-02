@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { ExerciseRecords } from '../utils/calculations';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t, Translations } from '../i18n/translations';
 
 interface Props {
   records: ExerciseRecords;
@@ -20,13 +22,13 @@ function formatDate(dateStr: string): string {
   return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
 }
 
-function buildRecordItems(records: ExerciseRecords): RecordItem[] {
+function buildRecordItems(records: ExerciseRecords, T: Translations): RecordItem[] {
   const items: RecordItem[] = [];
 
   if (records.maxWeight) {
     items.push({
-      label: 'Макс. вес',
-      value: `${records.maxWeight.value} кг`,
+      label: T.components.maxWeight,
+      value: `${records.maxWeight.value} ${T.common.kg}`,
       detail: `${records.maxWeight.value} × ${records.maxWeight.reps}`,
       date: formatDate(records.maxWeight.date),
     });
@@ -34,8 +36,8 @@ function buildRecordItems(records: ExerciseRecords): RecordItem[] {
 
   if (records.best1RM) {
     items.push({
-      label: 'Лучший 1RM',
-      value: `${records.best1RM.value} кг`,
+      label: T.components.best1RM,
+      value: `${records.best1RM.value} ${T.common.kg}`,
       detail: `${records.best1RM.weight} × ${records.best1RM.reps}`,
       date: formatDate(records.best1RM.date),
     });
@@ -43,17 +45,17 @@ function buildRecordItems(records: ExerciseRecords): RecordItem[] {
 
   if (records.maxTonnageAllSets) {
     items.push({
-      label: 'Тоннаж (все)',
-      value: `${records.maxTonnageAllSets.value} кг`,
-      detail: 'за все подходы',
+      label: T.components.tonnageAll,
+      value: `${records.maxTonnageAllSets.value} ${T.common.kg}`,
+      detail: T.components.allSets,
       date: formatDate(records.maxTonnageAllSets.date),
     });
   }
 
   if (records.maxTonnage1Set) {
     items.push({
-      label: 'Тоннаж (1 подход)',
-      value: `${records.maxTonnage1Set.value} кг`,
+      label: T.components.tonnage1Set,
+      value: `${records.maxTonnage1Set.value} ${T.common.kg}`,
       detail: `${records.maxTonnage1Set.weight} × ${records.maxTonnage1Set.reps}`,
       date: formatDate(records.maxTonnage1Set.date),
     });
@@ -61,18 +63,18 @@ function buildRecordItems(records: ExerciseRecords): RecordItem[] {
 
   if (records.maxReps1Set) {
     items.push({
-      label: 'Повт. (1 подход)',
+      label: T.components.reps1Set,
       value: `${records.maxReps1Set.value}`,
-      detail: `при ${records.maxReps1Set.weight} кг`,
+      detail: `${T.components.atWeight} ${records.maxReps1Set.weight} ${T.common.kg}`,
       date: formatDate(records.maxReps1Set.date),
     });
   }
 
   if (records.maxRepsAllSets) {
     items.push({
-      label: 'Повт. (все)',
+      label: T.components.repsAll,
       value: `${records.maxRepsAllSets.value}`,
-      detail: 'за все подходы',
+      detail: T.components.allSets,
       date: formatDate(records.maxRepsAllSets.date),
     });
   }
@@ -83,12 +85,14 @@ function buildRecordItems(records: ExerciseRecords): RecordItem[] {
 export default function RecordsCard({ records }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
-  const items = buildRecordItems(records);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+  const items = buildRecordItems(records, T);
 
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.noData}>Нет данных для рекордов</Text>
+        <Text style={styles.noData}>{T.components.noRecordsData}</Text>
       </View>
     );
   }

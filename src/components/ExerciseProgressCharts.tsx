@@ -4,6 +4,8 @@ import { LineChart } from 'react-native-chart-kit';
 import { SessionMetrics } from '../utils/calculations';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   metrics: SessionMetrics[];
@@ -11,24 +13,26 @@ interface Props {
 
 type ChartTab = 'maxWeight' | 'best1RM' | 'totalTonnage' | 'totalReps';
 
-const TABS: { key: ChartTab; label: string; unit: string; color: string }[] = [
-  { key: 'maxWeight', label: 'Макс. вес', unit: 'кг', color: 'rgba(162, 155, 254, 1)' },
-  { key: 'best1RM', label: '1RM', unit: 'кг', color: 'rgba(254, 202, 87, 1)' },
-  { key: 'totalTonnage', label: 'Тоннаж', unit: 'кг', color: 'rgba(85, 239, 196, 1)' },
-  { key: 'totalReps', label: 'Повторения', unit: '', color: 'rgba(116, 185, 255, 1)' },
-];
-
 const screenWidth = Dimensions.get('window').width - 72;
 
 export default function ExerciseProgressCharts({ metrics }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [activeTab, setActiveTab] = useState<ChartTab>('maxWeight');
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
+  const TABS: { key: ChartTab; label: string; unit: string; color: string }[] = useMemo(() => [
+    { key: 'maxWeight', label: T.components.maxWeightKg, unit: T.common.kg, color: 'rgba(162, 155, 254, 1)' },
+    { key: 'best1RM', label: '1RM', unit: T.common.kg, color: 'rgba(254, 202, 87, 1)' },
+    { key: 'totalTonnage', label: T.components.tonnage, unit: T.common.kg, color: 'rgba(85, 239, 196, 1)' },
+    { key: 'totalReps', label: T.components.reps, unit: '', color: 'rgba(116, 185, 255, 1)' },
+  ], [T]);
 
   if (metrics.length < 2) {
     return (
       <View style={styles.container}>
-        <Text style={styles.noData}>Нужно минимум 2 тренировки для графиков</Text>
+        <Text style={styles.noData}>{T.components.needMinCharts}</Text>
       </View>
     );
   }

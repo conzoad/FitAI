@@ -14,12 +14,12 @@ import {
   isBefore,
   startOfDay,
 } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS } from 'date-fns/locale';
 import { DailyEntry } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
-
-const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface NutritionCalendarProps {
   entries: Record<string, DailyEntry>;
@@ -37,6 +37,9 @@ export default function NutritionCalendar({
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+  const locale = lang === 'ru' ? ru : enUS;
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -91,7 +94,7 @@ export default function NutritionCalendar({
           <Text style={styles.navText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.monthTitle}>
-          {format(currentMonth, 'LLLL yyyy', { locale: ru })}
+          {format(currentMonth, 'LLLL yyyy', { locale })}
         </Text>
         <TouchableOpacity
           style={styles.navButton}
@@ -103,7 +106,7 @@ export default function NutritionCalendar({
 
       {/* Weekday headers */}
       <View style={styles.weekRow}>
-        {WEEK_DAYS.map((d) => (
+        {T.components.weekDays.map((d: string) => (
           <View key={d} style={styles.weekDayCell}>
             <Text style={styles.weekDayText}>{d}</Text>
           </View>
@@ -161,15 +164,15 @@ export default function NutritionCalendar({
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-          <Text style={styles.legendText}>В норме</Text>
+          <Text style={styles.legendText}>{T.components.withinTarget}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.calories }]} />
-          <Text style={styles.legendText}>Превышено</Text>
+          <Text style={styles.legendText}>{T.components.exceeded}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.textMuted }]} />
-          <Text style={styles.legendText}>Нет данных</Text>
+          <Text style={styles.legendText}>{T.components.noData}</Text>
         </View>
       </View>
     </View>

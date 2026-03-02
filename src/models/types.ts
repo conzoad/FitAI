@@ -58,6 +58,7 @@ export interface UserProfile {
   isOnboarded: boolean;
   weightHistory: WeightEntry[];
   geminiApiKey?: string;
+  geminiModel?: string;
 }
 
 export interface ChatMessage {
@@ -110,7 +111,6 @@ export interface GeminiNutritionResponse {
 export type RootTabParamList = {
   HomeTab: undefined;
   DiaryTab: undefined;
-  AddMealTab: undefined;
   WorkoutTab: undefined;
   ChatTab: undefined;
   ProfileTab: undefined;
@@ -135,6 +135,8 @@ export type HomeStackParamList = {
 export type DiaryStackParamList = {
   Diary: undefined;
   MealDetail: { mealId: string; date: string };
+  AddMeal: undefined;
+  BarcodeScanner: undefined;
 };
 
 // ===== Workout Types =====
@@ -309,7 +311,8 @@ export type WorkoutStackParamList = {
   WorkoutDetail: { sessionId: string; date: string };
   CreateProgram: undefined;
   ProgramDetail: { programId: string };
-  CreateExercise: undefined;
+  CreateExercise: { exerciseId?: string } | undefined;
+  MuscleDetail: { muscleId: string };
 };
 
 export type AddMealStackParamList = {

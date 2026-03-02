@@ -1,23 +1,29 @@
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS } from 'date-fns/locale';
+import type { Language } from '../stores/useLanguageStore';
+
+const locales = { ru, en: enUS };
 
 export function todayKey(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-export function formatDateRussian(date: Date | string): string {
+export function formatDateLocalized(date: Date | string, lang: Language = 'ru'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'd MMMM yyyy', { locale: ru });
+  return format(d, 'd MMMM yyyy', { locale: locales[lang] });
 }
 
-export function formatDayShort(date: Date | string): string {
+/** @deprecated Use formatDateLocalized */
+export const formatDateRussian = formatDateLocalized;
+
+export function formatDayShort(date: Date | string, lang: Language = 'ru'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'd MMM', { locale: ru });
+  return format(d, 'd MMM', { locale: locales[lang] });
 }
 
-export function formatWeekday(date: Date | string): string {
+export function formatWeekday(date: Date | string, lang: Language = 'ru'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'EEEEEE', { locale: ru });
+  return format(d, 'EEEEEE', { locale: locales[lang] });
 }
 
 export function dateKey(date: Date): string {

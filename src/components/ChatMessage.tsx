@@ -5,6 +5,8 @@ import { ChatMessage as ChatMessageType, ChatAction } from '../models/types';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface Props {
   message: ChatMessageType;
@@ -46,6 +48,8 @@ function renderFormattedText(text: string, isUser: boolean, styles: ReturnType<t
 function ActionButton({ action }: { action: ChatAction }) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const [applied, setApplied] = useState(false);
   const [programId, setProgramId] = useState<string | null>(null);
@@ -120,7 +124,7 @@ function ActionButton({ action }: { action: ChatAction }) {
           onPress={handleViewProgram}
           activeOpacity={0.7}
         >
-          <Text style={styles.viewProgramText}>Посмотреть →</Text>
+          <Text style={styles.viewProgramText}>{T.components.viewProgram}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -130,6 +134,8 @@ function ActionButton({ action }: { action: ChatAction }) {
 export default function ChatMessage({ message }: Props) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
 
   const isUser = message.role === 'user';
 

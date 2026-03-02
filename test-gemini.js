@@ -8,7 +8,7 @@ if (!API_KEY) {
 async function testGeminiREST() {
   console.log('🔄 Тестирую Gemini API...\n');
 
-  const models = ['gemini-2.0-flash', 'gemini-2.5-flash'];
+  const models = ['gemini-3-flash', 'gemini-2.5-flash'];
 
   for (const modelName of models) {
     console.log(`\n📡 Тестирую модель: ${modelName}`);

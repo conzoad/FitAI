@@ -5,15 +5,19 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useWorkoutStore } from '../stores/useWorkoutStore';
 import { useExercisePrefsStore } from '../stores/useExercisePrefsStore';
-import { WorkoutStackParamList } from '../models/types';
+import { WorkoutStackParamList, MuscleId } from '../models/types';
 import { getAllExercises } from '../services/exerciseDatabase';
 import WorkoutCard from '../components/WorkoutCard';
 import WorkoutCalendar from '../components/WorkoutCalendar';
+import WorkoutStatsCharts from '../components/WorkoutStatsCharts';
+import MuscleMapDiagram from '../components/MuscleMapDiagram';
 import EmptyState from '../components/EmptyState';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 import { format, subDays } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS } from 'date-fns/locale';
 
 type Nav = NativeStackNavigationProp<WorkoutStackParamList, 'Workouts'>;
 
@@ -29,8 +33,11 @@ export default function WorkoutsScreen() {
   const removeScheduledWorkout = useWorkoutStore((s) => s.removeScheduledWorkout);
   const customExercises = useExercisePrefsStore((s) => s.customExercises);
 
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const locale = lang === 'ru' ? ru : enUS;
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -49,12 +56,12 @@ export default function WorkoutsScreen() {
     for (const day of days) {
       const daySessions = sessions[day];
       if (daySessions && daySessions.length > 0) {
-        const label = format(new Date(day), 'd MMMM, EEEE', { locale: ru });
+        const label = format(new Date(day), 'd MMMM, EEEE', { locale });
         sections.push({ title: label, data: daySessions });
       }
     }
     return sections;
-  }, [sessions]);
+  }, [sessions, locale]);
 
   const totalWorkouts = useMemo(() => {
     return Object.values(sessions).reduce((sum, arr) => sum + arr.length, 0);
@@ -70,11 +77,52 @@ export default function WorkoutsScreen() {
     return vol;
   }, [sessions]);
 
+  const thirtyDayStats = useMemo(() => {
+    let workouts = 0;
+    let exercises = 0;
+    let sets = 0;
+    let reps = 0;
+    for (let i = 0; i < 30; i++) {
+      const key = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const daySessions = sessions[key] || [];
+      workouts += daySessions.length;
+      for (const s of daySessions) {
+        exercises += s.exercises.length;
+        for (const ex of s.exercises) {
+          const workingSets = ex.sets.filter((set) => !set.isWarmup);
+          sets += workingSets.length;
+          reps += workingSets.reduce((sum, set) => sum + set.reps, 0);
+        }
+      }
+    }
+    return { workouts, exercises, sets, reps };
+  }, [sessions]);
+
+  const muscleData = useMemo(() => {
+    const primarySet = new Set<MuscleId>();
+    const secondarySet = new Set<MuscleId>();
+    for (let i = 0; i < 5; i++) {
+      const key = format(subDays(new Date(), i), 'yyyy-MM-dd');
+      const daySessions = sessions[key] || [];
+      for (const session of daySessions) {
+        for (const ex of session.exercises) {
+          const exerciseData = allExercises.find((e) => e.id === ex.exerciseId);
+          if (exerciseData?.targetMuscles) {
+            exerciseData.targetMuscles.primary.forEach((m) => primarySet.add(m));
+            exerciseData.targetMuscles.secondary.forEach((m) => secondarySet.add(m));
+          }
+        }
+      }
+    }
+    primarySet.forEach((m) => secondarySet.delete(m));
+    return { primary: Array.from(primarySet), secondary: Array.from(secondarySet) };
+  }, [sessions, allExercises]);
+
   const handleStartFromProgram = (programId: string) => {
     const program = programs.find((p) => p.id === programId);
     if (!program) return;
     if (activeWorkout) {
-      Alert.alert('Внимание', 'У вас уже есть активная тренировка. Завершите или отмените её.');
+      Alert.alert(T.workout.activeWarningTitle, T.workout.activeWarningMessage);
       return;
     }
     startWorkoutFromProgram(program, allExercises);
@@ -82,9 +130,9 @@ export default function WorkoutsScreen() {
   };
 
   const handleDeleteProgram = (programId: string) => {
-    Alert.alert('Удалить программу?', 'Это действие нельзя отменить.', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: () => deleteProgram(programId) },
+    Alert.alert(T.workout.deleteProgramTitle, T.workout.deleteProgramMessage, [
+      { text: T.common.cancel, style: 'cancel' },
+      { text: T.common.delete, style: 'destructive', onPress: () => deleteProgram(programId) },
     ]);
   };
 
@@ -97,11 +145,11 @@ export default function WorkoutsScreen() {
     if (!scheduled) return;
     const program = programs.find((p) => p.id === scheduled.programId);
     if (!program) {
-      Alert.alert('Ошибка', 'Программа не найдена.');
+      Alert.alert(T.common.error, T.workout.programNotFound);
       return;
     }
     if (activeWorkout) {
-      Alert.alert('Внимание', 'У вас уже есть активная тренировка. Завершите или отмените её.');
+      Alert.alert(T.workout.activeWarningTitle, T.workout.activeWarningMessage);
       return;
     }
     startWorkoutFromProgram(program, allExercises);
@@ -109,9 +157,9 @@ export default function WorkoutsScreen() {
   }, [schedule, programs, activeWorkout, startWorkoutFromProgram, allExercises, navigation]);
 
   const handleRemoveScheduled = useCallback((date: string) => {
-    Alert.alert('Убрать из расписания?', '', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Убрать', style: 'destructive', onPress: () => removeScheduledWorkout(date) },
+    Alert.alert(T.workout.removeScheduleTitle, '', [
+      { text: T.common.cancel, style: 'cancel' },
+      { text: T.workout.remove, style: 'destructive', onPress: () => removeScheduledWorkout(date) },
     ]);
   }, [removeScheduledWorkout]);
 
@@ -126,13 +174,13 @@ export default function WorkoutsScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>Тренировки</Text>
+          <Text style={styles.title}>{T.workout.title}</Text>
           <TouchableOpacity
             style={styles.startButton}
             onPress={() => navigation.navigate('StartWorkout')}
           >
             <Text style={styles.startButtonText}>
-              {activeWorkout ? 'Продолжить' : 'Начать'}
+              {activeWorkout ? T.workout.continue : T.common.start}
             </Text>
           </TouchableOpacity>
         </View>
@@ -150,17 +198,17 @@ export default function WorkoutsScreen() {
         {selectedDate && selectedDayInfo && (
           <View style={styles.dayInfoCard}>
             <Text style={styles.dayInfoDate}>
-              {format(new Date(selectedDate), 'd MMMM, EEEE', { locale: ru })}
+              {format(new Date(selectedDate), 'd MMMM, EEEE', { locale })}
             </Text>
             {selectedDayInfo.scheduled && (
               <View style={styles.scheduledInfo}>
                 <View style={[styles.statusDot, { backgroundColor: selectedDayInfo.scheduled.status === 'completed' ? colors.success : selectedDayInfo.scheduled.status === 'missed' ? colors.error : selectedDayInfo.scheduled.status === 'inProgress' ? colors.workout : '#74B9FF' }]} />
                 <Text style={styles.scheduledName}>{selectedDayInfo.scheduled.programName}</Text>
                 <Text style={styles.scheduledStatus}>
-                  {selectedDayInfo.scheduled.status === 'planned' && 'Запланирована'}
-                  {selectedDayInfo.scheduled.status === 'completed' && 'Выполнена'}
-                  {selectedDayInfo.scheduled.status === 'missed' && 'Пропущена'}
-                  {selectedDayInfo.scheduled.status === 'inProgress' && 'В процессе'}
+                  {selectedDayInfo.scheduled.status === 'planned' && T.workout.planned}
+                  {selectedDayInfo.scheduled.status === 'completed' && T.workout.completed}
+                  {selectedDayInfo.scheduled.status === 'missed' && T.workout.missed}
+                  {selectedDayInfo.scheduled.status === 'inProgress' && T.workout.inProgress}
                 </Text>
               </View>
             )}
@@ -171,14 +219,14 @@ export default function WorkoutsScreen() {
                   onPress={() => handleStartScheduled(selectedDate)}
                 >
                   <Text style={styles.dayActionBtnText}>
-                    {selectedDayInfo.scheduled.status === 'missed' ? 'Начать сейчас' : 'Начать'}
+                    {selectedDayInfo.scheduled.status === 'missed' ? T.workout.startNow : T.workout.start}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.dayRemoveBtn}
                   onPress={() => handleRemoveScheduled(selectedDate)}
                 >
-                  <Text style={styles.dayRemoveBtnText}>Убрать</Text>
+                  <Text style={styles.dayRemoveBtnText}>{T.workout.remove}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -187,7 +235,7 @@ export default function WorkoutsScreen() {
                 style={styles.dayActionBtn}
                 onPress={() => navigation.navigate('WorkoutDetail', { sessionId: selectedDayInfo.scheduled!.sessionId!, date: selectedDate })}
               >
-                <Text style={styles.dayActionBtnText}>Подробнее</Text>
+                <Text style={styles.dayActionBtnText}>{T.workout.details}</Text>
               </TouchableOpacity>
             )}
             {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length > 0 && (
@@ -203,7 +251,7 @@ export default function WorkoutsScreen() {
                     >
                       <View style={{ flex: 1 }}>
                         <Text style={styles.miniSessionText}>
-                          {s.exercises.length} упр. · {s.totalVolume >= 1000 ? `${(s.totalVolume / 1000).toFixed(1)}т` : `${s.totalVolume}кг`} · {s.duration} мин
+                          {`${s.exercises.length} ${T.common.exercises} · ${s.totalVolume >= 1000 ? `${(s.totalVolume / 1000).toFixed(1)}${T.common.t}` : `${s.totalVolume}${T.common.kg}`} · ${s.duration} ${T.common.min}`}
                         </Text>
                         <Text style={styles.miniSessionExercises} numberOfLines={1}>
                           {exerciseNames}{moreCount > 0 ? ` +${moreCount}` : ''}
@@ -216,25 +264,55 @@ export default function WorkoutsScreen() {
               </View>
             )}
             {!selectedDayInfo.scheduled && selectedDayInfo.sessions.length === 0 && (
-              <Text style={styles.dayInfoEmpty}>Нет тренировок</Text>
+              <Text style={styles.dayInfoEmpty}>{T.workout.noWorkouts}</Text>
             )}
           </View>
         )}
 
-        <View style={styles.statsRow}>
+        {/* 30-day stats */}
+        <Text style={styles.statsTitle}>{T.workout.stats30}</Text>
+        <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{totalWorkouts}</Text>
-            <Text style={styles.statLabel}>Всего тренировок</Text>
+            <Text style={styles.statValue}>{thirtyDayStats.workouts}</Text>
+            <Text style={styles.statLabel}>{T.workout.trainings}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: colors.volume }]}>
-              {weekVolume >= 1000
-                ? `${(weekVolume / 1000).toFixed(1)}т`
-                : `${weekVolume}кг`}
-            </Text>
-            <Text style={styles.statLabel}>Объём за неделю</Text>
+            <Text style={styles.statValue}>{thirtyDayStats.exercises}</Text>
+            <Text style={styles.statLabel}>{T.workout.exercisesCount}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{thirtyDayStats.sets}</Text>
+            <Text style={styles.statLabel}>{T.workout.setsCount}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{thirtyDayStats.reps}</Text>
+            <Text style={styles.statLabel}>{T.workout.repsCount}</Text>
           </View>
         </View>
+
+        {/* Workout charts */}
+        <View style={styles.chartsSection}>
+          <WorkoutStatsCharts sessions={sessions} />
+        </View>
+
+        {/* Muscle map (last 5 days) */}
+        {(muscleData.primary.length > 0 || muscleData.secondary.length > 0) && (
+          <View style={styles.muscleMapSection}>
+            <Text style={styles.muscleMapTitle}>{T.workout.muscles5}</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('MuscleDetail', { muscleId: muscleData.primary[0] || muscleData.secondary[0] })}
+            >
+              <MuscleMapDiagram
+                primary={muscleData.primary}
+                secondary={muscleData.secondary}
+                primaryColor="#FF6B6B"
+                secondaryColor="#FECA57"
+                inactiveColor="rgba(180,180,180,0.25)"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.buttonsRow}>
           <TouchableOpacity
@@ -242,7 +320,7 @@ export default function WorkoutsScreen() {
             onPress={() => navigation.navigate('ExerciseList', { onSelect: false })}
           >
             <Text style={styles.catalogIcon}>📖</Text>
-            <Text style={styles.catalogText}>Каталог упражнений</Text>
+            <Text style={styles.catalogText}>{T.workout.catalog}</Text>
             <Text style={styles.catalogArrow}>→</Text>
           </TouchableOpacity>
         </View>
@@ -251,10 +329,10 @@ export default function WorkoutsScreen() {
         {(programs.length > 0 || true) && (
           <View style={styles.programsSection}>
             <View style={styles.programsHeader}>
-              <Text style={styles.programsTitle}>Мои программы</Text>
+              <Text style={styles.programsTitle}>{T.workout.myPrograms}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('CreateProgram')}>
                 <View style={styles.addProgramBadge}>
-                  <Text style={styles.addProgramText}>+ Создать</Text>
+                  <Text style={styles.addProgramText}>{T.workout.createProgram}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -262,7 +340,7 @@ export default function WorkoutsScreen() {
             {programs.length === 0 ? (
               <View style={styles.noProgramsCard}>
                 <Text style={styles.noProgramsText}>
-                  Создайте программу, чтобы быстро начинать тренировки
+                  {T.workout.createProgramHint}
                 </Text>
               </View>
             ) : (
@@ -276,7 +354,7 @@ export default function WorkoutsScreen() {
                   <View style={styles.programInfo}>
                     <Text style={styles.programName}>{program.name}</Text>
                     <Text style={styles.programMeta}>
-                      {program.exercises.length} упр.
+                      {`${program.exercises.length} ${T.common.exercises}`}
                     </Text>
                   </View>
                   <View style={styles.programActions}>
@@ -287,7 +365,7 @@ export default function WorkoutsScreen() {
                         handleStartFromProgram(program.id);
                       }}
                     >
-                      <Text style={styles.programStartText}>Начать</Text>
+                      <Text style={styles.programStartText}>{T.workout.start}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={(e) => {
@@ -307,7 +385,7 @@ export default function WorkoutsScreen() {
         {/* Recent sessions */}
         {recentSessions.length > 0 && (
           <View style={styles.recentSection}>
-            <Text style={styles.recentTitle}>Последние тренировки</Text>
+            <Text style={styles.recentTitle}>{T.workout.recentWorkouts}</Text>
             {recentSessions.map((section) => (
               <View key={section.title}>
                 <Text style={styles.sectionHeader}>{section.title}</Text>
@@ -329,7 +407,7 @@ export default function WorkoutsScreen() {
         )}
 
         {recentSessions.length === 0 && (
-          <EmptyState icon="🏋️" title="Нет тренировок" subtitle="Начните первую тренировку!" />
+          <EmptyState icon="🏋️" title={T.workout.noWorkouts} subtitle={T.workout.noWorkoutsHint} />
         )}
 
         <View style={{ height: 30 }} />
@@ -374,14 +452,22 @@ function getStyles(c: typeof darkColors) {
       fontSize: 15,
       fontWeight: '700',
     },
-    statsRow: {
+    statsTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      paddingHorizontal: 20,
+      marginBottom: 10,
+    },
+    statsGrid: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       paddingHorizontal: 20,
       gap: 10,
       marginBottom: 14,
     },
     statCard: {
-      flex: 1,
+      width: '47%' as any,
       backgroundColor: c.surface,
       borderRadius: 16,
       padding: 16,
@@ -625,6 +711,20 @@ function getStyles(c: typeof darkColors) {
       paddingHorizontal: 20,
     },
     recentTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: c.text,
+      marginBottom: 10,
+    },
+    chartsSection: {
+      paddingHorizontal: 20,
+      marginBottom: 14,
+    },
+    muscleMapSection: {
+      paddingHorizontal: 20,
+      marginBottom: 14,
+    },
+    muscleMapTitle: {
       fontSize: 18,
       fontWeight: '700',
       color: c.text,

@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +21,8 @@ import { formatDayShort, getDaysArray, dateKey } from '../utils/dateHelpers';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
 import { EMPTY_MACROS } from '../utils/constants';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 const screenWidth = Dimensions.get('window').width - 40;
 
@@ -37,6 +41,9 @@ export default function StatsScreen() {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
+
   const days = useMemo(() => getDaysArray(period === 'week' ? 7 : 30), [period]);
 
   const entries = useMemo(
@@ -51,7 +58,7 @@ export default function StatsScreen() {
   const sugarData = entries.map((e) => e.totalMacros.sugar ?? 0);
   const saltData = entries.map((e) => e.totalMacros.salt ?? 0);
 
-  const labels = days.map((d) => formatDayShort(d));
+  const labels = days.map((d) => formatDayShort(d, lang));
   const displayLabels = period === 'week'
     ? labels
     : labels.filter((_, i) => i % 5 === 0);
@@ -86,35 +93,35 @@ export default function StatsScreen() {
     proteins: {
       data: proteinData,
       color: colors.proteins,
-      label: 'Белки',
+      label: T.stats.proteins,
       target: profile.targetProteins,
-      suffix: 'г',
+      suffix: T.common.g,
     },
     fats: {
       data: fatData,
       color: colors.fats,
-      label: 'Жиры',
+      label: T.stats.fats,
       target: profile.targetFats,
-      suffix: 'г',
+      suffix: T.common.g,
     },
     carbs: {
       data: carbData,
       color: colors.carbs,
-      label: 'Углеводы',
+      label: T.stats.carbs,
       target: profile.targetCarbs,
-      suffix: 'г',
+      suffix: T.common.g,
     },
     sugar: {
       data: sugarData,
       color: colors.carbs,
-      label: 'Сахар',
-      suffix: 'г',
+      label: T.stats.sugar,
+      suffix: T.common.g,
     },
     salt: {
       data: saltData,
       color: colors.textSecondary,
-      label: 'Соль',
-      suffix: 'г',
+      label: T.stats.salt,
+      suffix: T.common.g,
     },
   };
 
@@ -140,7 +147,7 @@ export default function StatsScreen() {
   const handleSaveWeight = () => {
     const w = parseFloat(weightInput.replace(',', '.'));
     if (isNaN(w) || w < 20 || w > 300) {
-      Alert.alert('Ошибка', 'Введите корректный вес (20-300 кг)');
+      Alert.alert(T.common.error, T.stats.weightError);
       return;
     }
     addWeightEntry(Math.round(w * 10) / 10);
@@ -160,10 +167,10 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={styles.backText}>{T.common.back}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>Статистика</Text>
+        <Text style={styles.title}>{T.stats.title}</Text>
 
         <View style={styles.periodRow}>
           <TouchableOpacity
@@ -171,7 +178,7 @@ export default function StatsScreen() {
             onPress={() => setPeriod('week')}
           >
             <Text style={[styles.periodText, period === 'week' && styles.periodTextActive]}>
-              Неделя
+              {T.stats.week}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -179,7 +186,7 @@ export default function StatsScreen() {
             onPress={() => setPeriod('month')}
           >
             <Text style={[styles.periodText, period === 'month' && styles.periodTextActive]}>
-              Месяц
+              {T.stats.month}
             </Text>
           </TouchableOpacity>
         </View>
@@ -187,16 +194,16 @@ export default function StatsScreen() {
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>{avgCalories}</Text>
-            <Text style={styles.summaryLabel}>Среднее ккал/день</Text>
+            <Text style={styles.summaryLabel}>{T.stats.avgCalories}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>{daysInTarget}</Text>
-            <Text style={styles.summaryLabel}>Дней в норме</Text>
+            <Text style={styles.summaryLabel}>{T.stats.daysInTarget}</Text>
           </View>
         </View>
 
         {/* Calories Chart */}
-        <Text style={styles.chartTitle}>Калории</Text>
+        <Text style={styles.chartTitle}>{T.stats.calories}</Text>
         {calorieData.some((c) => c > 0) ? (
           <LineChart
             data={{
@@ -219,11 +226,11 @@ export default function StatsScreen() {
             fromZero
           />
         ) : (
-          <Text style={styles.noData}>Нет данных за этот период</Text>
+          <Text style={styles.noData}>{T.stats.noDataPeriod}</Text>
         )}
 
         {/* BJU Charts with tabs */}
-        <Text style={styles.chartTitle}>БЖУ</Text>
+        <Text style={styles.chartTitle}>{T.stats.bju}</Text>
         <View style={styles.macroTabRow}>
           {(Object.keys(macroTabData) as MacroTab[]).map((tab) => (
             <TouchableOpacity
@@ -263,25 +270,25 @@ export default function StatsScreen() {
               }}
               style={styles.chart}
               fromZero
-              yAxisSuffix="г"
+              yAxisSuffix={T.common.g}
               yAxisLabel=""
             />
             <View style={styles.macroSummaryRow}>
               <Text style={[styles.macroAvg, { color: currentMacro.color }]}>
-                Среднее: {(() => {
+                {T.stats.average}: {(() => {
                   const withData = currentMacro.data.filter((_, i) => calorieData[i] > 0);
                   return withData.length > 0 ? Math.round(withData.reduce((a, b) => a + b, 0) / withData.length) : 0;
                 })()}{currentMacro.suffix}
               </Text>
               {currentMacro.target != null && (
                 <Text style={styles.macroTarget}>
-                  Цель: {currentMacro.target}{currentMacro.suffix}
+                  {T.stats.target}: {currentMacro.target}{currentMacro.suffix}
                 </Text>
               )}
             </View>
           </View>
         ) : (
-          <Text style={styles.noData}>Нет данных за этот период</Text>
+          <Text style={styles.noData}>{T.stats.noDataPeriod}</Text>
         )}
 
         {/* GI/II Averages */}
@@ -301,13 +308,13 @@ export default function StatsScreen() {
               {avgGI != null && (
                 <View style={styles.summaryCard}>
                   <Text style={[styles.summaryValue, { color: colors.calories }]}>{avgGI}</Text>
-                  <Text style={styles.summaryLabel}>Средний ГИ</Text>
+                  <Text style={styles.summaryLabel}>{T.stats.avgGI}</Text>
                 </View>
               )}
               {avgII != null && (
                 <View style={styles.summaryCard}>
                   <Text style={[styles.summaryValue, { color: colors.calories }]}>{avgII}</Text>
-                  <Text style={styles.summaryLabel}>Средний ИИ</Text>
+                  <Text style={styles.summaryLabel}>{T.stats.avgII}</Text>
                 </View>
               )}
             </View>
@@ -316,7 +323,7 @@ export default function StatsScreen() {
 
         {/* Weight History */}
         <View style={styles.weightHeader}>
-          <Text style={styles.chartTitle}>Вес</Text>
+          <Text style={styles.chartTitle}>{T.stats.weight}</Text>
           <TouchableOpacity
             style={styles.addWeightButton}
             onPress={() => {
@@ -324,7 +331,7 @@ export default function StatsScreen() {
               setWeightModalVisible(true);
             }}
           >
-            <Text style={styles.addWeightText}>+ Записать</Text>
+            <Text style={styles.addWeightText}>{T.stats.addWeight}</Text>
           </TouchableOpacity>
         </View>
 
@@ -351,19 +358,19 @@ export default function StatsScreen() {
             }}
             bezier
             style={styles.chart}
-            yAxisSuffix=" кг"
+            yAxisSuffix={` ${T.common.kg}`}
             yAxisLabel=""
           />
         ) : (
           <View style={styles.noWeightData}>
             <Text style={styles.noData}>
               {weightChartData.weights.length === 1
-                ? 'Нужно минимум 2 записи для графика'
-                : 'Нет записей веса. Нажмите "+ Записать"'}
+                ? T.stats.needMoreRecords
+                : T.stats.noWeightRecords}
             </Text>
             {weightHistory.length > 0 && (
               <Text style={styles.currentWeight}>
-                Текущий вес: {profile.weightKg} кг
+                {T.stats.currentWeight}: {profile.weightKg} {T.common.kg}
               </Text>
             )}
           </View>
@@ -375,7 +382,7 @@ export default function StatsScreen() {
               <Text style={[styles.summaryValue, { color: colors.workout }]}>
                 {profile.weightKg}
               </Text>
-              <Text style={styles.summaryLabel}>Текущий (кг)</Text>
+              <Text style={styles.summaryLabel}>{T.stats.currentKg}</Text>
             </View>
             {weightHistory.length >= 2 && (
               <View style={styles.summaryCard}>
@@ -389,7 +396,7 @@ export default function StatsScreen() {
                   {((weightHistory[weightHistory.length - 1].weight - weightHistory[0].weight) > 0 ? '+' : '')}
                   {(weightHistory[weightHistory.length - 1].weight - weightHistory[0].weight).toFixed(1)}
                 </Text>
-                <Text style={styles.summaryLabel}>Изменение (кг)</Text>
+                <Text style={styles.summaryLabel}>{T.stats.changeKg}</Text>
               </View>
             )}
           </View>
@@ -403,15 +410,19 @@ export default function StatsScreen() {
         animationType="fade"
         onRequestClose={() => setWeightModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Записать вес</Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{T.stats.weightModalTitle}</Text>
             <TextInput
               style={styles.modalInput}
               value={weightInput}
               onChangeText={setWeightInput}
               keyboardType="decimal-pad"
-              placeholder="Ваш вес (кг)"
+              placeholder={T.stats.weightPlaceholder}
               placeholderTextColor={colors.textSecondary}
               autoFocus
               selectTextOnFocus
@@ -421,17 +432,18 @@ export default function StatsScreen() {
                 style={styles.modalCancel}
                 onPress={() => setWeightModalVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Отмена</Text>
+                <Text style={styles.modalCancelText}>{T.common.cancel}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalSave}
                 onPress={handleSaveWeight}
               >
-                <Text style={styles.modalSaveText}>Сохранить</Text>
+                <Text style={styles.modalSaveText}>{T.common.save}</Text>
               </TouchableOpacity>
             </View>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

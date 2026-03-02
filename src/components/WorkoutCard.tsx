@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WorkoutSession } from '../models/types';
 import { darkColors } from '../theme/colors';
 import { useColors } from '../theme/useColors';
+import { useLanguageStore } from '../stores/useLanguageStore';
+import { t } from '../i18n/translations';
 
 interface WorkoutCardProps {
   session: WorkoutSession;
@@ -12,6 +14,8 @@ interface WorkoutCardProps {
 export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
   const colors = useColors();
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const lang = useLanguageStore((s) => s.language);
+  const T = t(lang);
   const exerciseCount = session.exercises.length;
   const totalSets = session.exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => !s.isWarmup).length, 0);
 
@@ -24,14 +28,14 @@ export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
             <Text style={styles.icon}>🏋️</Text>
           </View>
           <View style={styles.headerInfo}>
-            <Text style={styles.title}>Тренировка</Text>
+            <Text style={styles.title}>{T.components.workout}</Text>
             <Text style={styles.time}>
-              {new Date(session.startTime).toLocaleTimeString('ru-RU', {
+              {new Date(session.startTime).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
               {' · '}
-              {session.duration} мин
+              {session.duration} {T.components.min}
             </Text>
           </View>
         </View>
@@ -39,12 +43,12 @@ export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
         <View style={styles.exercises}>
           {session.exercises.slice(0, 3).map((ex) => (
             <Text key={ex.id} style={styles.exerciseName} numberOfLines={1}>
-              {ex.exerciseName} — {ex.sets.filter((s) => !s.isWarmup).length} подх.
+              {ex.exerciseName} — {ex.sets.filter((s) => !s.isWarmup).length} {T.components.sets}
             </Text>
           ))}
           {session.exercises.length > 3 && (
             <Text style={styles.moreText}>
-              +{session.exercises.length - 3} ещё
+              +{session.exercises.length - 3} {T.components.moreExercises}
             </Text>
           )}
         </View>
@@ -52,21 +56,21 @@ export default function WorkoutCard({ session, onPress }: WorkoutCardProps) {
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{exerciseCount}</Text>
-            <Text style={styles.statLabel}>упражн.</Text>
+            <Text style={styles.statLabel}>{T.components.exercisesShort}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{totalSets}</Text>
-            <Text style={styles.statLabel}>подходов</Text>
+            <Text style={styles.statLabel}>{T.components.setsShort}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
             <Text style={[styles.statValue, { color: colors.volume }]}>
               {session.totalVolume >= 1000
-                ? `${(session.totalVolume / 1000).toFixed(1)}т`
-                : `${session.totalVolume}кг`}
+                ? `${(session.totalVolume / 1000).toFixed(1)}${T.components.tons}`
+                : `${session.totalVolume}${T.common.kg}`}
             </Text>
-            <Text style={styles.statLabel}>объём</Text>
+            <Text style={styles.statLabel}>{T.components.volume}</Text>
           </View>
         </View>
       </View>
